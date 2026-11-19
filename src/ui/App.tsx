@@ -20,7 +20,7 @@ function normalizePath(pathname: string): RoutePath {
 
 export const App: React.FC = () => {
   const [route, setRoute] = useState<RoutePath>(() => normalizePath(window.location.pathname));
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [benchmarks, setBenchmarks] = useState<BenchmarkItem[]>([]);
   const [launchBenchmarkId, setLaunchBenchmarkId] = useState<string | null>(null);
@@ -79,7 +79,7 @@ export const App: React.FC = () => {
           <button type="button" className="brand-btn" onClick={() => navigate('/')}>
             <span className="brand-mark">TL</span>
             <span className="brand-name">Turwin Labs</span>
-            <span className="brand-tag">turwinlabs.org</span>
+            <span className="brand-domain">turwinlabs.org</span>
           </button>
 
           <nav className="nav-links" aria-label="Primary navigation">
@@ -113,21 +113,29 @@ export const App: React.FC = () => {
               className={`nav-link ${route === '/open-source' ? 'active' : ''}`}
               onClick={() => navigate('/open-source')}
             >
-              Open Source
+              Repository
             </button>
           </nav>
 
           <div className="topbar-actions">
+            <span className="status-chip" data-testid="overview-health">
+              <span className={`dot ${health?.ok ? 'ok' : ''}`} />
+              {health?.ok
+                ? health.runtime === 'node'
+                  ? 'ONLINE · Z3 WASM'
+                  : 'ONLINE · EDGE SMT'
+                : 'CONNECTING'}
+            </span>
             <button
               type="button"
-              className="icon-btn"
+              className="btn-ghost"
               aria-label="Toggle color theme"
-              onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
             >
-              {theme === 'light' ? 'Dark' : 'Light'}
+              {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
-            <a className="icon-btn" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-              GitHub ↗
+            <a className="btn-ghost" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+              GitHub
             </a>
           </div>
         </div>
@@ -156,18 +164,16 @@ export const App: React.FC = () => {
 
       <footer className="footer">
         <div className="footer-inner">
-          <div>
-            <strong>Turwin Labs</strong> · Open Formal Verification Research · MIT License
-          </div>
+          <div>Turwin Labs · Universal Bounds Kernel · MIT License</div>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <button type="button" className="nav-link" style={{ padding: 0 }} onClick={() => navigate('/research')}>
-              Research Paper
+              Research Note
             </button>
             <button type="button" className="nav-link" style={{ padding: 0 }} onClick={() => navigate('/open-source')}>
-              Repo Guide
+              Source Code
             </button>
             <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-              GitHub ↗
+              github.com/TurwinAI/ubk-protocol-workbench
             </a>
           </div>
         </div>

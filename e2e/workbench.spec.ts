@@ -26,10 +26,16 @@ test.describe('Turwin Labs — UBK Protocol Workbench E2E', () => {
       }
     });
 
-    // 1. Overview page
+    // 1. Overview page (dark mode default + live interactive console + mechanism stepper)
     await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByTestId('overview-health')).toContainText('ONLINE');
     await expect(page.locator('h1')).toContainText('Formal bounds for generative reasoning');
+    await expect(page.getByTestId('hero-console')).toContainText('Unique-Correct');
+    await page.getByTestId('hero-case-linear-comparison-sort-unsat').click();
+    await expect(page.getByTestId('hero-console')).toContainText('IMPOSSIBLE');
+    await page.getByTestId('stage-03').click();
+    await expect(page.locator('.dot-canvas')).toContainText('BOUNDED CERTIFICATE OUTPUT');
 
     // 2. Research page
     await page.getByTestId('nav-research').click();
