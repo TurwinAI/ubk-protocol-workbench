@@ -472,6 +472,19 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
 
                 {activeTab === 'dag' && (
                   <div>
+                    {result.dagVerification && (
+                      <div className="artifact-card" data-testid="dag-proof-card" style={{ marginBottom: 16 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', marginBottom: 6 }}>
+                          <strong>DAG ACYCLICITY CHECK</strong> ·{' '}
+                          {result.dagVerification.isAcyclic ? 'ACYCLIC' : 'CYCLE DETECTED'} ·{' '}
+                          {result.dagVerification.verificationMethod.toUpperCase()}
+                        </div>
+                        <pre className="code-block" style={{ marginBottom: 0 }}>
+                          {result.dagVerification.proof.join('\n')}
+                        </pre>
+                      </div>
+                    )}
+
                     <div className="dot-canvas" style={{ marginBottom: 20, border: '1px solid var(--line)' }}>
                       <div className="dag-flow">
                         {result.plan.nodes.map((node, idx) => (

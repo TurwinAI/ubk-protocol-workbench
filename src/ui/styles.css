@@ -713,10 +713,11 @@ textarea:focus-visible {
   border-color: var(--fail-line);
 }
 
-.badge.UNRESOLVED {
+.badge.UNRESOLVED,
+.badge.UNVERIFIED {
   color: var(--warn-fg);
   background: var(--warn-bg);
-  border-color: rgba(212, 148, 30, 0.4);
+  border-color: rgba(212, 148, 30, 0.45);
 }
 
 /* ── Mechanism Stepper (Section 02 — Hairline Rows + Left Cobalt Spine) ── */

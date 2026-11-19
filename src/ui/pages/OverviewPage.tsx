@@ -15,36 +15,49 @@ interface OverviewPageProps {
 }
 
 const SHORT_CASE_LABELS: Record<string, string> = {
-  'inplace-sort-sat': 'In-Place O(1) Sort',
-  'linear-comparison-sort-unsat': 'O(n) Comparison Sort',
-  'perpetual-motion-carnot': 'Over-Unity Heat Engine',
-  'quantum-no-cloning': 'Quantum State Cloning',
+  'carnot-feasible-sat': 'Carnot 40% (600K/300K)',
+  'carnot-infeasible-unsat': 'Carnot 65% (600K/300K)',
+  'nyquist-undersampling-unsat': 'Nyquist 20kHz @ 30kHz',
+  'quantum-no-cloning': 'Quantum No-Cloning',
+  'unformalized-prose-abstain': 'Unformalized Policy',
 };
+
+const HERO_CASE_IDS = [
+  'carnot-feasible-sat',
+  'carnot-infeasible-unsat',
+  'nyquist-undersampling-unsat',
+  'unformalized-prose-abstain',
+];
 
 const MECHANISM_STAGES = [
   {
     num: '01',
-    title: 'Encode Constraints',
+    title: 'Encode Quantitative Bounds',
     summary:
-      'The encoder parses a stated objective into domain tags and SMT-LIB2 formulas with clear confidence scores. Any unformalized claim enters an open region list called Umap.',
-    artifactLabel: 'SMT-LIB2 ENCODING (O(1) AUXILIARY SPACE)',
-    code: `; Constraint IR: ubk-o1_space-1 (COMPLEXITY)
-(declare-const auxiliary_space Int)
-(declare-const n Int)
-(assert (> n 0))
-(assert (forall ((n_val Int))
-  (=> (> n_val 0)
-      (= auxiliary_space auxiliary_space))))
+      'The encoder extracts real numeric values and physical laws into QF_LRA or QF_LIA formulas for Z3. Claims without a formal model enter an open region list called Umap.',
+    artifactLabel: 'SMT-LIB2 ENCODING (CARNOT QF_LRA)',
+    code: `; Carnot Thermal Efficiency Bound (QF_LRA)
+; Reservoirs T_hot = 600 K, T_cold = 300 K (limit 50.00%)
+(declare-const T_hot Real)
+(declare-const T_cold Real)
+(declare-const eta_claimed Real)
+(declare-const eta_carnot Real)
+(assert (= T_hot 600.0))
+(assert (= T_cold 300.0))
+(assert (= eta_claimed 0.4))
+(assert (= (* eta_carnot T_hot) (- T_hot T_cold)))
+(assert (<= eta_claimed eta_carnot))
 (check-sat)`,
   },
   {
     num: '02',
-    title: 'Check Invariants and Axioms',
+    title: 'Check Solvers and Structure',
     summary:
-      'Each candidate meets five structural invariants (Prov, TypeOK, ASTOK, GoalOK, CycleFree), an SMT proof check, twelve domain axiom tables, and a quantum resource flow check.',
-    artifactLabel: 'KERNEL INVARIANT LEDGER',
+      'Each candidate meets recorded structural invariants, quantitative Z3 solving, linear resource-flow checks for quantum states, and open-conjecture flags without LLM self-judging.',
+    artifactLabel: 'EPISTEMIC EVIDENCE RECORD',
     code: `{
   "target_rule_set_id": "TURWIN-INV-v4.0-FS",
+  "soundness_grade": "FORMAL_SMT",
   "invariant_checks": {
     "Prov": true,
     "TypeOK": true,
@@ -52,39 +65,40 @@ const MECHANISM_STAGES = [
     "GoalOK": true,
     "CycleFree": true
   },
-  "axiom_domains_loaded": 12,
-  "resource_flow_check": "PASS"
+  "dag_acyclicity": "z3-sat (acyclic)"
 }`,
   },
   {
     num: '03',
-    title: 'Mint Bounded Certificate',
+    title: 'Mint Deterministic Certificate',
     summary:
-      'Execution halts inside fixed iteration, branch, and failure limits. The kernel signs one of three verdicts with SHA-256: Unique-Correct, Unresolved-Within-Bounds, or Failure.',
+      'Execution halts inside fixed step and failure limits. The kernel signs one of three outcomes with deterministic SHA-256: Bounded-Verified, Refuted, or Unverified-Within-Bounds.',
     artifactLabel: 'BOUNDED CERTIFICATE OUTPUT',
     code: `{
-  "certificate_type": "Unique-Correct",
+  "certificate_type": "Bounded-Verified",
   "certificate_version": "2.0",
   "declared_bounds": { "max_paths": 5, "max_steps_per_path": 3 },
-  "proof_artifact": { "pass_count": 1, "fail_count": 0 },
-  "determinism_claim": "Identical bounds and input yield identical ledger."
+  "proof_artifact": { "proof_type": "BoundedVerifiedProof", "pass_count": 1 },
+  "determinism_claim": "Identical bounds and input yield identical SHA-256."
 }`,
   },
   {
     num: '04',
-    title: 'Compile Execution Graph',
+    title: 'Verify Execution Graph',
     summary:
-      'Accepted protocols compile into a schema-checked directed graph (CompositeDocAst). Each node records its modality, dependency order, and proof packet.',
-    artifactLabel: 'EXECUTION GRAPH NODES',
-    code: `node_01 [Formalize Bounds]       -> modality: text
-node_02 [Construct Algorithm]    -> modality: text
-node_03 [Verify & Synthesize]    -> modality: text
-node_04 [Verification Summary]   -> artifact: report`,
+      'Protocols compile into a schema-checked node graph (CompositeDocAst). Z3 solves integer order constraints across every dependency edge to prove the graph contains no cycles.',
+    artifactLabel: 'Z3 DAG ACYCLICITY PROOF',
+    code: `=== Z3 SAT DAG Acyclicity Verification ===
+Edge constraint: order[node_01] < order[node_02]
+Edge constraint: order[node_02] < order[node_03]
+SAT - DAG is acyclic
+Topological order: node_01 -> node_02 -> node_03`,
   },
 ];
 
 const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ status, running }) => {
   const isPass = status === 'PASS';
+  const isUnverified = status === 'UNVERIFIED' || status === 'UNKNOWN';
   const isImpossible = status === 'IMPOSSIBLE' || status === 'FAIL';
 
   return (
@@ -92,22 +106,33 @@ const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ sta
       className="trace-svg"
       viewBox="0 0 360 190"
       role="img"
-      aria-label="Kernel bifurcation decision trace"
+      aria-label="Kernel decision trace"
     >
-      {/* Entry spine: CLAIM -> INVARIANTS -> GATE */}
-      <line x1="16" y1="95" x2="178" y2="95" stroke="var(--cobalt)" strokeWidth="2" />
+      {/* Entry spine: CLAIM -> ENCODE -> GATE */}
+      <line x1="16" y1="95" x2="174" y2="95" stroke="var(--cobalt)" strokeWidth="2" />
 
-      {/* Upper branch: PASS / UNIQUE-CORRECT */}
+      {/* Upper branch: PASS / BOUNDED-VERIFIED */}
       <polyline
-        points="178,95 232,42 332,42"
+        points="174,95 224,38 332,38"
         fill="none"
         stroke={isPass ? 'var(--pass-fg)' : 'var(--line)'}
         strokeWidth={isPass ? '2.5' : '1.25'}
       />
 
-      {/* Lower branch: IMPOSSIBLE / IMPCERT */}
+      {/* Middle branch: UNVERIFIED / UMAP */}
+      <line
+        x1="174"
+        y1="95"
+        x2="332"
+        y2="95"
+        stroke={isUnverified ? 'var(--warn-fg)' : 'var(--line)'}
+        strokeWidth={isUnverified ? '2.5' : '1.25'}
+        strokeDasharray="4 4"
+      />
+
+      {/* Lower branch: IMPOSSIBLE / REFUTED */}
       <polyline
-        points="178,95 232,148 332,148"
+        points="174,95 224,152 332,152"
         fill="none"
         stroke={isImpossible ? 'var(--signal)' : 'var(--line)'}
         strokeWidth={isImpossible ? '2.5' : '1.25'}
@@ -115,12 +140,12 @@ const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ sta
 
       {/* Nodes */}
       <rect x="12" y="91" width="8" height="8" fill="var(--cobalt)" />
-      <rect x="92" y="91" width="8" height="8" fill="var(--cobalt)" />
-      <rect x="174" y="91" width="8" height="8" fill={running ? 'var(--amber)' : 'var(--cobalt)'} />
+      <rect x="90" y="91" width="8" height="8" fill="var(--cobalt)" />
+      <rect x="170" y="91" width="8" height="8" fill={running ? 'var(--amber)' : 'var(--cobalt)'} />
 
       <rect
         x="328"
-        y="38"
+        y="34"
         width="8"
         height="8"
         fill={isPass ? 'var(--pass-fg)' : 'var(--bg-recessed)'}
@@ -129,7 +154,16 @@ const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ sta
       />
       <rect
         x="328"
-        y="144"
+        y="91"
+        width="8"
+        height="8"
+        fill={isUnverified ? 'var(--warn-fg)' : 'var(--bg-recessed)'}
+        stroke={isUnverified ? 'var(--warn-fg)' : 'var(--line-strong)'}
+        strokeWidth="1.5"
+      />
+      <rect
+        x="328"
+        y="148"
         width="8"
         height="8"
         fill={isImpossible ? 'var(--signal)' : 'var(--bg-recessed)'}
@@ -141,34 +175,45 @@ const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ sta
       <text x="12" y="78" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
         CLAIM
       </text>
-      <text x="96" y="78" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
-        5 INVARIANTS
+      <text x="94" y="78" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
+        QF_LRA / LIA
       </text>
-      <text x="178" y="122" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
-        SMT + AXIOMS
+      <text x="174" y="122" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
+        Z3 GATE
       </text>
 
       <text
         x="336"
-        y="28"
+        y="24"
         textAnchor="end"
         fill={isPass ? 'var(--pass-fg)' : 'var(--muted)'}
         fontFamily="var(--font-mono)"
-        fontSize="9.5"
+        fontSize="9"
         letterSpacing="0.8"
       >
-        PASS / UNIQUE-CORRECT
+        PASS / BOUNDED-VERIFIED
       </text>
       <text
         x="336"
-        y="170"
+        y="83"
+        textAnchor="end"
+        fill={isUnverified ? 'var(--warn-fg)' : 'var(--muted)'}
+        fontFamily="var(--font-mono)"
+        fontSize="9"
+        letterSpacing="0.8"
+      >
+        UNVERIFIED / UMAP
+      </text>
+      <text
+        x="336"
+        y="174"
         textAnchor="end"
         fill={isImpossible ? 'var(--fail-fg)' : 'var(--muted)'}
         fontFamily="var(--font-mono)"
-        fontSize="9.5"
+        fontSize="9"
         letterSpacing="0.8"
       >
-        IMPOSSIBLE / IMPCERT
+        IMPOSSIBLE / REFUTED
       </text>
     </svg>
   );
@@ -180,8 +225,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onNavigate,
   onLaunchBenchmark,
 }) => {
-  const [selectedId, setSelectedId] = useState<string>('inplace-sort-sat');
-  const [claimInput, setClaimInput] = useState<string>('Sort an array without any auxiliary space');
+  const [selectedId, setSelectedId] = useState<string>('carnot-feasible-sat');
+  const [claimInput, setClaimInput] = useState<string>(
+    'Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 40% thermal efficiency'
+  );
   const [running, setRunning] = useState<boolean>(false);
   const [liveResult, setLiveResult] = useState<RunResult | null>(null);
   const [liveError, setLiveError] = useState<string | null>(null);
@@ -215,7 +262,10 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   };
 
   useEffect(() => {
-    void runLiveConsole('Sort an array without any auxiliary space', 'inplace-sort-sat');
+    void runLiveConsole(
+      'Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 40% thermal efficiency',
+      'carnot-feasible-sat'
+    );
   }, []);
 
   const handleSelectCase = (item: BenchmarkItem) => {
@@ -224,6 +274,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     void runLiveConsole(item.objective, item.id);
   };
 
+  const heroCases = benchmarks.filter((b) => HERO_CASE_IDS.includes(b.id));
+  const displayedHeroCases = heroCases.length > 0 ? heroCases : benchmarks.slice(0, 4);
   const stage = MECHANISM_STAGES[activeStage];
 
   return (
@@ -236,15 +288,14 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
           <div className="hero-side">
             <p className="hero-copy">
-              Language models draft code and technical procedures fast, yet they often propose
-              designs that violate physical laws or known mathematical bounds. The Universal Bounds
-              Kernel checks every candidate against formal invariants, SMT proofs, and twelve domain
-              axiom tables before any protocol runs.
+              Language models draft code and technical plans fast, yet they often propose designs
+              that violate physical laws or known mathematical bounds. The Universal Bounds Kernel
+              checks concrete numeric claims with Z3 SMT solving and linear resource checks before
+              accepting a plan.
             </p>
             <p className="hero-copy">
-              Each run halts inside fixed iteration and failure caps. The kernel returns a signed
-              verification certificate, a disproof witness, or an explicit map of claims that remain
-              unproved.
+              When a claim lacks a formal model, the kernel refuses to guess. It returns a signed
+              bounded certificate, a disproof witness, or an explicit unverified map called Umap.
             </p>
 
             <div className="cta-row">
@@ -273,17 +324,17 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
         <div className="console-instrument" data-testid="hero-console">
           <div className="console-head">
-            <span>LIVE KERNEL INSTRUMENT · REPLAY MODE</span>
+            <span>LIVE KERNEL INSTRUMENT · CHANGE ANY NUMBER TO TEST SOLVER</span>
             <div className="console-head-right">
               <span>{running ? 'SOLVING...' : liveResult ? `${liveResult.timingMs.total} MS` : 'READY'}</span>
               <span>
-                {health?.runtime === 'node' ? 'Z3 WASM (NODE)' : 'EDGE SMT + LOCAL Z3'}
+                {health?.runtime === 'node' ? 'Z3 WASM (NODE)' : 'EXACT ARITHMETIC EDGE + LOCAL Z3'}
               </span>
             </div>
           </div>
 
           <div className="case-strip">
-            {benchmarks.map((item) => (
+            {displayedHeroCases.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -316,6 +367,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 <button
                   type="button"
                   className="btn-primary btn-primary-sm"
+                  data-testid="hero-verify-btn"
                   disabled={running || !claimInput.trim()}
                   onClick={() => void runLiveConsole(claimInput, selectedId || undefined)}
                 >
@@ -341,7 +393,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                       <div className="kv-val">{liveResult.ubk.certificate.certificate_type}</div>
                     </div>
                     <div className="ledger-cell">
-                      <div className="kv-label">SMT Solver</div>
+                      <div className="kv-label">Evidence Tier</div>
                       <div className="kv-val">
                         {liveResult.smtResult.verdict} ({liveResult.smtResult.soundness})
                       </div>
@@ -361,7 +413,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                       type="button"
                       className="link-action"
                       style={{ minHeight: 32, fontSize: '0.7rem' }}
-                      onClick={() => onLaunchBenchmark(selectedId || 'inplace-sort-sat')}
+                      onClick={() => onLaunchBenchmark(selectedId || 'carnot-feasible-sat')}
                     >
                       Inspect Full Run in Workbench
                     </button>
@@ -385,7 +437,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 }}
               >
                 {liveResult
-                  ? `STOP: ${liveResult.ubk.stopReason} · AXIOMS: ${liveResult.scientificValidation.classification.toUpperCase()}`
+                  ? `STOP: ${liveResult.ubk.stopReason} · UMAP: ${liveResult.ubk.state.Umap.length} · DAG: ${liveResult.dagVerification?.isAcyclic ? 'ACYCLIC' : 'CHECKED'}`
                   : 'AWAITING EVALUATION'}
               </div>
             </div>
@@ -396,16 +448,16 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           <div className="spec-cell">
             <div className="spec-k">Solver Engine</div>
             <div className="spec-v">
-              {health?.runtime === 'node' ? 'Z3 WebAssembly (Node)' : 'Edge SMT + Local Z3'}
+              {health?.runtime === 'node' ? 'Z3 WebAssembly (Node)' : 'Exact Edge SMT + Local Z3'}
             </div>
           </div>
           <div className="spec-cell">
-            <div className="spec-k">Axiom Database</div>
-            <div className="spec-v">12 Scientific Domains</div>
+            <div className="spec-k">Soundness Policy</div>
+            <div className="spec-v">Abstains via Umap on Prose</div>
           </div>
           <div className="spec-cell">
             <div className="spec-k">Reference Suite</div>
-            <div className="spec-v">{benchmarks.length || 4} Verifiable Cases</div>
+            <div className="spec-v">{benchmarks.length || 5} Counterfactual Cases</div>
           </div>
           <div className="spec-cell">
             <div className="spec-k">Distribution</div>
@@ -419,8 +471,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         <div className="section-head-split">
           <h2 className="section-heading">Verification Pipeline</h2>
           <p className="section-intro">
-            Select a stage to inspect the formal data passed between the language model and the
-            compiled plan graph.
+            Select a stage to inspect the formal artifacts passed between the language model and
+            the verified execution graph.
           </p>
         </div>
 
@@ -476,8 +528,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
             <p className="section-intro">
-              Four benchmark cases ship in the MIT repo. Each runs offline in replay mode or with a
-              user-supplied Gemini API key.
+              Five counterfactual and abstention cases ship in the MIT repo. Edit any numeric bound
+              to test solver sensitivity offline or with a Gemini API key.
             </p>
             <button type="button" className="link-action" onClick={() => onNavigate('/open-source')}>
               Read Repository Guide

@@ -127,7 +127,9 @@ export async function extractConstraintsWithLLM(
     .map((item, idx) => {
       const domain = item.domain as ConstraintDomain;
       const formula: SMTFormula = {
-        smtlib: `; LLM-extracted semantic constraint ${idx + 1}\n; ${item.claim}\n(assert true)\n(check-sat)`,
+        // Never emit vacuous `(assert true)`. Unformalized prose stays empty so UBK
+        // records MISSING_FORMAL_EXPRESSION in Umap instead of fabricating a SAT proof.
+        smtlib: '',
         description: item.claim,
         domain,
         variables: [],
@@ -135,7 +137,7 @@ export async function extractConstraintsWithLLM(
       };
       return {
         formula,
-        confidence: Math.max(0.1, Math.min(0.95, Number(item.confidence) || 0.55)),
+        confidence: Math.max(0.1, Math.min(0.55, Number(item.confidence) || 0.45)),
         originalText: item.originalText || text.slice(0, 200),
       };
     });

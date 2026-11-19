@@ -4,7 +4,7 @@ export interface BenchmarkItem {
   id: string;
   title: string;
   domain: string;
-  expectedStatus: 'PASS' | 'IMPOSSIBLE';
+  expectedStatus: 'PASS' | 'IMPOSSIBLE' | 'UNVERIFIED';
   summary: string;
   objective: string;
   protocolMarkdown: string;
@@ -39,7 +39,7 @@ export interface RunResult {
     domain?: string;
   };
   ubk: {
-    status: 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNKNOWN';
+    status: 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNVERIFIED' | 'UNKNOWN';
     runStatus: string;
     stopReason: string;
     traceLog: string[];
@@ -99,6 +99,13 @@ export interface RunResult {
       outputType?: string;
       description: string;
     }>;
+  };
+  dagVerification?: {
+    isAcyclic: boolean;
+    topologicalOrder?: string[];
+    cycles?: string[][];
+    proof: string[];
+    verificationMethod: 'z3-sat' | 'heuristic-fallback';
   };
   artifacts: Array<{
     id?: string;

@@ -6,7 +6,6 @@
 import { parseRecipeToLogic, verifyNoCloning } from './logicParser';
 import { smtVerifier, formatSMTResultForWitness, hasSMTVerifiableConstraints, DEFAULT_SMT_VERIFIER_CONFIG } from './smtVerifier';
 import { getVerificationOracles } from './oracles'; // Pluggable optional verification oracles
-import { encodeSteganography, generateTurwinID } from '../utils/steganographyUtils';
 import { cosineSimilarity, hashEmbed, semanticNovelty } from './noveltyScoring';
 import type { EmbeddingProvider } from './noveltyScoring';
 
@@ -191,12 +190,17 @@ export interface ExecutionParameters {
 
 /**
  * Certificate classification types per the bounded certification protocol.
- * 
- * - Unique-Correct: Exactly one admissible execution path within bounds
- * - Unresolved-Within-Bounds: Multiple paths or no path found, bounds exhausted
- * - Failure: Invariant violations or unbounded behavior detected
+ *
+ * - Bounded-Verified: Formal SMT / structural invariants passed within declared bounds and Umap is empty.
+ * - Refuted: Formal SMT or deterministic structural check proved a violation (ImpCert minted).
+ * - Unverified-Within-Bounds: Objective was unformalized (non-empty Umap) or bounds were exhausted.
+ * - Failure: Kernel error or malformed state.
  */
-export type CertificateType = 'Unique-Correct' | 'Unresolved-Within-Bounds' | 'Failure';
+export type CertificateType =
+  | 'Bounded-Verified'
+  | 'Refuted'
+  | 'Unverified-Within-Bounds'
+  | 'Failure';
 
 /**
  * Verification ledger entry - records each candidate path evaluation
@@ -240,7 +244,7 @@ export interface BoundedCertificate {
   
   // Proof artifact summary
   proof_artifact: {
-    proof_type: 'UniqueCorrectProof' | 'UnresolvedProof' | 'FailureProof';
+    proof_type: 'BoundedVerifiedProof' | 'RefutationProof' | 'UnverifiedProof' | 'FailureProof';
     bounds_exhausted: boolean;
     bounds_exhausted_reason: string[];
     pass_count: number;
@@ -489,9 +493,9 @@ export function checkGoalCoverage(
   const trimmedContent = artifact.content.trim();
   if (!trimmedContent) return true;
 
+  const overlap = calculateOverlap(trimmedContent, goal);
   const noveltyGate = config ? resolveNoveltyGate(config) : DEFAULT_NOVELTY_GATE;
   if (trimmedContent.length < noveltyGate.minContentLength) {
-    const overlap = calculateOverlap(trimmedContent, goal);
     return overlap >= tau;
   }
 
@@ -499,9 +503,8 @@ export function checkGoalCoverage(
     const contentVector = hashEmbed(trimmedContent);
     const goalVector = hashEmbed(goal);
     const similarity = cosineSimilarity(contentVector, goalVector);
-    return similarity >= tau;
+    return Math.max(similarity, overlap) >= tau;
   } catch {
-    const overlap = calculateOverlap(trimmedContent, goal);
     return overlap >= tau;
   }
 }
@@ -624,13 +627,13 @@ function computePolicyHash(config: TurwinConfig): string {
 }
 
 /**
- * Compute CSB core projection hash.
+ * Compute CSB core projection hash (intentionally excludes stepNumber so CycleFree
+ * genuinely detects repeated state transitions rather than incrementing every step).
  * CsbId(CSB_n) := H(TAG_C || Encode(CSB*_n))
  */
 function computeCsbId(csb: CanonicalStateBlock, config: TurwinConfig): string {
   const csbCore = {
     goal: csb.goal,
-    stepNumber: csb.stepNumber,
     cfgId: computePolicyHash(config),
     artifactCount: csb.registry.artifacts.length,
   };
@@ -1075,57 +1078,69 @@ async function computeRealSHA256(data: string): Promise<string> {
 }
 
 // Operator: CERTIFICATE_EXPORT (Projection Layer)
-async function CERTIFICATE_EXPORT(
+export async function CERTIFICATE_EXPORT(
   registry: ArtifactRegistry,
   status: ExecutionStatus,
   stopReason: StopReason,
   config: TurwinConfig,
-  stats: { enumerationCount: number; validationCount: number }
+  stats: {
+    enumerationCount: number;
+    validationCount: number;
+    lastInvariant?: InvariantCheck | null;
+    hasFormalVerification?: boolean;
+  }
 ): Promise<BoundedCertificate> {
-  // Logic: The "Candidate" is the entire execution trace (The Solution Path).
-  // If the trace completed successfully (even with IMP_CERTS), it's a PASS.
-  // We produce 1 Path in the ledger.
-  
-  const isComplete = status === 'COMPLETE';
+  const hasImpCert = registry.artifacts.some((a) => a.type === 'IMP_CERT');
+  const isComplete = status === 'COMPLETE' && !hasImpCert;
   const unresolvedWithinBounds = status === 'PARTIAL' || status === 'RESOURCE_EXHAUSTED';
   const boundsExhausted = status === 'RESOURCE_EXHAUSTED' || status === 'PARTIAL';
-  
-  // Aggregate invariant checks from all steps (if any step failed, the path would have halted or been rejected)
-  // In a successful trace, all committed artifacts passed verification.
-  const checksPassed = registry.artifacts.length > 0;
+
+  const recorded = stats.lastInvariant;
+  const hasFormal = stats.hasFormalVerification ?? true;
 
   const ledgerEntry: VerificationLedgerEntry = {
     path_id: 'trace-execution-0',
-    artifact_type: 'RECIPE_TRACE', // Composite type
-    status: isComplete ? 'PASS' : 'FAIL',
-    reason_code: isComplete ? null : stopReason,
+    artifact_type: hasImpCert ? 'IMP_CERT_TRACE' : 'PROTOCOL_TRACE',
+    status: isComplete && hasFormal ? 'PASS' : 'FAIL',
+    reason_code: hasImpCert
+      ? 'REFUTED_BY_FORMAL_OR_STRUCTURAL_CHECK'
+      : isComplete && !hasFormal
+        ? 'OBJECTIVE_UNFORMALIZED'
+        : isComplete
+          ? null
+          : stopReason,
     invariant_checks: {
-       Prov: checksPassed,
-       TypeOK: checksPassed, 
-       ASTOK: checksPassed,
-       GoalOK: checksPassed,
-       CycleFree: checksPassed
-    }
+      Prov: recorded ? recorded.provenanceOK : false,
+      TypeOK: recorded ? recorded.typeOK : false,
+      ASTOK: recorded ? recorded.astOK : false,
+      GoalOK: recorded ? recorded.goalOK : false,
+      CycleFree: recorded ? recorded.cycleFree : false,
+    },
   };
 
   const ledger = [ledgerEntry];
+  const passCount = ledger.filter((e) => e.status === 'PASS').length;
+  const failCount = ledger.filter((e) => e.status === 'FAIL').length;
 
-  const passCount = ledger.filter(e => e.status === 'PASS').length;
-  const failCount = ledger.filter(e => e.status === 'FAIL').length;
-  
   let certType: CertificateType = 'Failure';
-  let proofType: 'UniqueCorrectProof' | 'UnresolvedProof' | 'FailureProof' = 'FailureProof';
-  
-  if (passCount === 1) { 
-     certType = 'Unique-Correct';
-     proofType = 'UniqueCorrectProof';
+  let proofType: 'BoundedVerifiedProof' | 'RefutationProof' | 'UnverifiedProof' | 'FailureProof' =
+    'FailureProof';
+
+  if (hasImpCert) {
+    certType = 'Refuted';
+    proofType = 'RefutationProof';
+  } else if (isComplete && !hasFormal) {
+    certType = 'Unverified-Within-Bounds';
+    proofType = 'UnverifiedProof';
+  } else if (passCount === 1) {
+    certType = 'Bounded-Verified';
+    proofType = 'BoundedVerifiedProof';
   } else if (unresolvedWithinBounds) {
-     certType = 'Unresolved-Within-Bounds';
-     proofType = 'UnresolvedProof';
+    certType = 'Unverified-Within-Bounds';
+    proofType = 'UnverifiedProof';
   } else {
-     // Default fallback
-     certType = 'Failure';
-     proofType = 'FailureProof';
+    certType = 'Failure';
+    proofType = 'FailureProof';
   }
 
   const cert: BoundedCertificate = {
@@ -1134,32 +1149,34 @@ async function CERTIFICATE_EXPORT(
     declared_bounds: {
       max_paths: config.maxPaths || config.kappa,
       max_steps_per_path: config.maxSteps || 10,
-      max_compute_units: stats.validationCount * 10
+      max_compute_units: stats.validationCount * 10,
     },
     target_rule_set_id: 'TURWIN-INV-v4.0-FS',
     verification_ledger: ledger,
     proof_artifact: {
       proof_type: proofType,
       bounds_exhausted: boundsExhausted,
-      bounds_exhausted_reason: isComplete ? [] : [stopReason],
+      bounds_exhausted_reason: isComplete && hasFormal ? [] : [ledgerEntry.reason_code || stopReason],
       pass_count: passCount,
       fail_count: failCount,
       single_passing_path_id: passCount === 1 ? ledgerEntry.path_id : null,
-      failure_code_multiset: failCount > 0 ? { [ledgerEntry.reason_code || 'unknown_failure']: 1 } : {}
+      failure_code_multiset: failCount > 0 ? { [ledgerEntry.reason_code || 'unknown_failure']: 1 } : {},
     },
     compute_accounting: {
       compute_units_consumed: stats.validationCount,
       enumeration_count: Math.max(1, stats.enumerationCount),
-      validation_count: stats.validationCount
+      validation_count: stats.validationCount,
     },
     fingerprint: '',
     timestamp: new Date().toISOString(),
-    determinism_claim: 'Given identical bounds and input, replay produces identical ledger and proof_artifact'
+    determinism_claim: 'Given identical bounds and input, replay produces identical ledger and proof_artifact',
   };
-  
-  const canonical = canonicalSerialize({ ...cert, fingerprint: '' });
+
+  // Deterministic SHA-256 commitment: exclude wall-clock timestamp so identical
+  // inputs and bounds genuinely reproduce the exact same fingerprint across replays.
+  const canonical = canonicalSerialize({ ...cert, fingerprint: '', timestamp: '' });
   cert.fingerprint = await computeRealSHA256(canonical);
-  
+
   return cert;
 }
 
@@ -1469,6 +1486,8 @@ export async function executeTurwinKernel(
   let witnessOutput = '';  // v4.0-FS: Witness tape (Tape W)
   let fail = 0;
   const recentWitnesses: Witness[] = [];
+  let lastInvariant: InvariantCheck | null = null;
+  let sawFormalVerification = false;
 
   // Initial CSB (line 10)
   let csb = canonicalize(registry, parameters, cycleHistory, goal, n);
@@ -1596,12 +1615,19 @@ export async function executeTurwinKernel(
     let smtWitness = null;
     const goalHasFormalConstraint = hasSMTVerifiableConstraints(goal);
     
+    // Record actual per-step structural invariant evaluation
+    lastInvariant = checkInvariant(goal, input, csb, proposal, projected.artifact, config);
+
     if ('content' in projected.artifact && typeof projected.artifact.content === 'string') {
         smtResult = await smtVerifier.verifyConstraint(goal, projected.artifact.content);
         const proofText = typeof smtResult.proof === 'string' ? smtResult.proof : '';
         const requiresFormalSMT =
           goalHasFormalConstraint ||
           /formal\s+smt\s+solver|formal\s+solver/i.test(proofText);
+
+        if (smtResult.verdict === 'POSSIBLE' && (smtResult.soundness === 'FORMAL_SMT' || smtResult.soundness === 'STRUCTURAL_CHECK')) {
+          sawFormalVerification = true;
+        }
 
         if (smtResult.verdict === 'IMPOSSIBLE') {
             logTrace(`  ⚠️ FENCE TRIP (SMT): ${smtResult.proof?.split('\n')[0]}`);
@@ -1613,7 +1639,7 @@ export async function executeTurwinKernel(
                 provenance: ['SMT_VERIFIER_v4.0-FS'],
                 confidence: 1.0
             } as Witness;
-        } else if (requiresFormalSMT && (smtResult.verdict === 'UNKNOWN' || smtResult.soundness !== 'SOUND')) {
+        } else if (requiresFormalSMT && (smtResult.verdict === 'UNKNOWN' || (smtResult.soundness !== 'FORMAL_SMT' && smtResult.soundness !== 'STRUCTURAL_CHECK'))) {
             logTrace('  ⚠️ FENCE TRIP (SMT): formal solver soundness unavailable');
             smtWitness = {
                 type: 'WITNESS' as const,
@@ -1666,7 +1692,13 @@ export async function executeTurwinKernel(
          }
       }
 
-      if (discoveryLoop.enabled && discoveryLoop.commitImpCertOnFail) {
+      // Only mint an Impossibility Certificate (IMP_CERT) for genuine formal SMT,
+      // linear resource conservation, or axiom refutations — never for lexical GoalOK misses.
+      const isFormalRefutation =
+        Boolean(verification.impCert) ||
+        /^(?:SMT_|QUANTUM_NO_CLONING|SCIENTIFIC_AXIOM)/i.test(verification.reasonCode ?? '');
+
+      if (discoveryLoop.enabled && discoveryLoop.commitImpCertOnFail && isFormalRefutation) {
         const failImpCert = verification.impCert ?? deriveImpCertFromFailure(proposal, verification.witness);
         const failCertHash = computeCommitHash(goal, failImpCert, config);
         const failNovelty = await computeNoveltyContext(toProposalView(failImpCert), registry);
@@ -1894,10 +1926,12 @@ export async function executeTurwinKernel(
     n++;
   }
 
-  // Generate Bounded Certificate
+  // Generate Bounded Certificate with actual recorded invariant checks and formal status
   const stats = {
     enumerationCount: Math.max(1, n),
-    validationCount: n + fail
+    validationCount: n + fail,
+    lastInvariant,
+    hasFormalVerification: sawFormalVerification,
   };
   
   const certificate = await CERTIFICATE_EXPORT(registry, status, stopReason, config, stats);
@@ -2116,14 +2150,8 @@ function projectToSchema(
  */
 function serializeToCleanOutput(artifact: VerifiedArtifact): string {
   if ('content' in artifact) {
-    // INJECT INVISIBLE WATERMARK: Mark this as a Genuine Turwin Asset
-    // We use Zero-Width Characters to hide the certificate (Date + Version).
-    const date = new Date().toISOString().split('T')[0];
-    const certPayload = `Turwin v${TCB_VERSION}|${date}|${generateTurwinID()}`;
-    const watermark = encodeSteganography(certPayload);
-    
-    // Embed watermark at the very beginning (Introduction)
-    return watermark + artifact.content;
+    // Open-source MIT hygiene: return plain, unwatermarked artifact text.
+    return artifact.content;
   }
 
   // For structured artifacts, return prose description
@@ -2249,15 +2277,15 @@ export async function INV(
       return { verified: false, witness };
     }
 
-    // 2. Slow Path: Logic Parser (for Quantum No-Cloning)
-    if (artifact.content.includes("Step")) {
+    // 2. Deterministic Linear Resource-Flow Parser (Quantum No-Cloning)
+    if (artifact.content.includes('Step') || artifact.content.includes('|')) {
       const logicSteps = parseRecipeToLogic(artifact.content);
       if (logicSteps) {
         const noCloningCheck = verifyNoCloning(logicSteps);
         if (!noCloningCheck.passed) {
           const witness: Witness = {
             type: 'WITNESS',
-            counterExample: `Quantum No-Cloning Violation detected in Step ${noCloningCheck.violationStep}. Unknown state |ψ⟩ duplicated.`,
+            counterExample: `Quantum No-Cloning Violation detected in Step ${noCloningCheck.violationStep}: ${noCloningCheck.violatedState} increased from ${noCloningCheck.inputCount} to ${noCloningCheck.outputCount}.`,
             constraintViolated: 'QUANTUM_NO_CLONING',
             provenance: []
           };
@@ -2319,24 +2347,9 @@ export async function INV(
     }
   }
 
-  // LAYER 7: LLM-as-Judge Semantic Constraint Verification (PROBABILISTIC)
-  if (generator && 'content' in artifact) {
-    const semanticResult = await judgeConstraintSatisfaction(
-      goal, 
-      artifact.content, 
-      generator
-    );
-    
-    if (!semanticResult.possible) {
-      const witness: Witness = {
-        type: 'WITNESS',
-        counterExample: `Semantic impossibility: ${semanticResult.violation}`,
-        constraintViolated: 'SEMANTIC_CONSTRAINT',
-        provenance: []
-      };
-      return { verified: false, witness };
-    }
-  }
+  // LAYER 7: Deterministic-Only Gate (LLM-as-Judge deliberately removed from TCB)
+  // Truth checks never ask the untrusted generator to grade its own proposal.
+  void generator;
 
   // NEW: Scientific Axiom Validation (v3.3-IF with Z3 SMT verification)
   // Check if the artifact content violates known scientific axioms
@@ -2464,77 +2477,6 @@ export const adversarialVerify = INV;
 // v3.3-IF: Import canonical impossibility check (consolidated - single source of truth)
 import { quickImpossibilityCheck as quickScienceCheck } from './scientificValidationService';
 
-/**
- * LLM-as-Judge: Verify that the proposed solution's claims are semantically possible
- * given the stated constraints. This catches hallucinations like "O(1) space Radix Sort".
- * 
- * This is DOMAIN-AGNOSTIC: We use the LLM's own knowledge to verify, not hardcoded rules.
- */
-async function judgeConstraintSatisfaction(
-  goal: string,
-  content: string,
-  generator: ProposalGenerator
-): Promise<{ possible: boolean; violation?: string }> {
-  // Extract constraints from goal (look for [MUST NOT] patterns)
-  const mustNotMatches = goal.match(/\[MUST NOT\][^•\n]*/gi) || [];
-  const mustMatches = goal.match(/\[MUST\][^•\n]*/gi) || [];
-  const withoutMatches = goal.match(/WITHOUT\s+[^.,\n]+/gi) || [];
-  
-  const constraints = [...mustNotMatches, ...mustMatches, ...withoutMatches];
-  if (constraints.length === 0) {
-    // No explicit constraints to verify
-    return { possible: true };
-  }
-
-  // Ask the LLM to verify its own claims
-  const auditPrompt = `You are a rigorous technical auditor. Be extremely critical.
-
-STATED CONSTRAINTS:
-${constraints.map(c => `• ${c}`).join('\n')}
-
-PROPOSED SOLUTION:
-"""
-${content.substring(0, KERNEL_CONSTANTS.AUDIT_CONTENT_LIMIT)}
-"""
-
-QUESTION: Does this proposed solution ACTUALLY satisfy ALL stated constraints? 
-Consider theoretical limitations, not just implementation details.
-
-For example:
-- If the constraint says "WITHOUT auxiliary space" and the solution uses counting arrays, that FAILS.
-- If the constraint says "WITHOUT comparisons" and the solution claims O(n log n) with only comparisons, that FAILS.
-
-Respond with EXACTLY one of:
-JUDGMENT: POSSIBLE - [Brief explanation why all constraints are satisfied]
-JUDGMENT: IMPOSSIBLE - [Which constraint is violated and why]`;
-
-  try {
-    // Create a minimal CSB for the audit call
-    const minimalCSB: CanonicalStateBlock = {
-      goal: 'semantic_audit',
-      stepNumber: 0,
-      instruction: 'READ_A',
-      registry: { artifacts: [], commitLog: [] },
-      parameters: { temperature: 0, maxTokens: 0, topP: 0, modelVersion: 'audit' },
-      cycleHistory: new Set(),
-      status: 'ACTIVE'
-    };
-    const response = await generator(auditPrompt, minimalCSB);
-    
-    if (response.toLowerCase().includes('impossible')) {
-      const violationMatch = response.match(/IMPOSSIBLE\s*[-:]\s*(.+)/i);
-      return { 
-        possible: false, 
-        violation: violationMatch?.[1]?.trim() || 'Semantic constraint violation detected'
-      };
-    }
-    
-    return { possible: true };
-  } catch {
-    // If audit fails, fail open (assume possible to avoid blocking)
-    return { possible: true };
-  }
-}
 function checkTermination(
   goal: string,
   registry: ArtifactRegistry,
