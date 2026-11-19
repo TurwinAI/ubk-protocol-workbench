@@ -18,6 +18,25 @@ function normalizePath(pathname: string): RoutePath {
   return '/';
 }
 
+const TurwinMark: React.FC = () => (
+  <svg
+    className="brand-svg"
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    preserveAspectRatio="xMidYMid meet"
+    shapeRendering="geometricPrecision"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path
+      d="M 18.4556 5.1 L 22 5.1 L 22 2.9 L 17.5444 2.9 L 9.5444 10.9 L 2 10.9 L 2 13.1 L 9.5444 13.1 L 17.5444 21.1 L 21 21.1 L 21 18.9 L 18.4556 18.9 L 11.5556 12 L 18.4556 5.1 Z"
+      fill="currentColor"
+      fillRule="nonzero"
+    />
+  </svg>
+);
+
 export const App: React.FC = () => {
   const [route, setRoute] = useState<RoutePath>(() => normalizePath(window.location.pathname));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -77,9 +96,10 @@ export const App: React.FC = () => {
       <header className="topbar">
         <div className="topbar-inner">
           <button type="button" className="brand-btn" onClick={() => navigate('/')}>
-            <span className="brand-mark">TL</span>
-            <span className="brand-name">Turwin Labs</span>
-            <span className="brand-domain">turwinlabs.org</span>
+            <TurwinMark />
+            <span className="brand-wordmark">TURWIN LABS</span>
+            <span className="brand-sep">/</span>
+            <span className="brand-domain">UBK</span>
           </button>
 
           <nav className="nav-links" aria-label="Primary navigation">
@@ -118,25 +138,28 @@ export const App: React.FC = () => {
           </nav>
 
           <div className="topbar-actions">
-            <span className="status-chip" data-testid="overview-health">
+            <span className="status-inline" data-testid="overview-health">
               <span className={`dot ${health?.ok ? 'ok' : ''}`} />
               {health?.ok
                 ? health.runtime === 'node'
-                  ? 'ONLINE · Z3 WASM'
-                  : 'ONLINE · EDGE SMT'
+                  ? 'ONLINE · Z3'
+                  : 'ONLINE · EDGE'
                 : 'CONNECTING'}
             </span>
             <button
               type="button"
-              className="btn-ghost"
+              className="topbar-util"
               aria-label="Toggle color theme"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
             >
-              {theme === 'dark' ? 'Light' : 'Dark'}
+              {theme === 'dark' ? 'Paper' : 'Ink'}
             </button>
-            <a className="btn-ghost" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+            <a className="topbar-util" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
               GitHub
             </a>
+            <button type="button" className="topbar-cta" onClick={() => navigate('/workbench')}>
+              Workbench
+            </button>
           </div>
         </div>
       </header>
@@ -164,15 +187,15 @@ export const App: React.FC = () => {
 
       <footer className="footer">
         <div className="footer-inner">
-          <div>Turwin Labs · Universal Bounds Kernel · MIT License</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <button type="button" className="nav-link" style={{ padding: 0 }} onClick={() => navigate('/research')}>
+          <div>TURWIN LABS · UNIVERSAL BOUNDS KERNEL · MIT LICENSE</div>
+          <div className="footer-links">
+            <button type="button" className="footer-link" onClick={() => navigate('/research')}>
               Research Note
             </button>
-            <button type="button" className="nav-link" style={{ padding: 0 }} onClick={() => navigate('/open-source')}>
-              Source Code
+            <button type="button" className="footer-link" onClick={() => navigate('/open-source')}>
+              Repository
             </button>
-            <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+            <a className="footer-link" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
               github.com/TurwinAI/ubk-protocol-workbench
             </a>
           </div>

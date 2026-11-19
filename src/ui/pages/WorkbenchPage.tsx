@@ -140,18 +140,24 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
   return (
     <main className="wb-shell">
       <div className="wb-toolbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 650, fontSize: '0.92rem' }}>UBK Verification Workbench</span>
-          <span className="status-chip" style={{ display: 'inline-flex' }} data-testid="health-status">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 500, fontSize: '0.96rem', letterSpacing: '-0.01em' }}>
+            UBK Verification Workbench
+          </span>
+          <span
+            className="status-inline"
+            style={{ display: 'inline-flex', color: 'var(--text-secondary)' }}
+            data-testid="health-status"
+          >
             <span className={`dot ${health?.ok ? 'ok' : ''}`} />
             {health?.ok ? 'API: ONLINE' : 'API: CONNECTING'}
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--muted)' }}>
-            {health?.runtime === 'node' ? 'Z3 WASM (Node.js)' : 'Edge SMT + 12 Axiom Domains'}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
+            {health?.runtime === 'node' ? 'Z3 WASM (NODE.JS)' : 'EDGE SMT + 12 AXIOM DOMAINS'}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div className="mode-group" role="group" aria-label="Execution mode">
             <button
               type="button"
@@ -178,7 +184,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
           </div>
           <button
             type="button"
-            className="btn-primary"
+            className="btn-primary btn-primary-sm"
             data-testid="run-button"
             disabled={running || !objective.trim()}
             onClick={handleRun}
@@ -196,62 +202,63 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
 
       <div className="wb-layout">
         <aside className="wb-rail">
-          <div className="rail-heading">Reference Cases</div>
-          <div className="benchmark-list">
-            {benchmarks.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`benchmark-${item.id}`}
-                className={`benchmark-btn ${selectedBenchmarkId === item.id ? 'active' : ''}`}
-                onClick={() => selectBenchmark(item)}
-              >
-                <div className="benchmark-top">
-                  <span>{item.title}</span>
-                  <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
-                </div>
-                <div className="benchmark-meta">{item.domain}</div>
-              </button>
-            ))}
+          <div className="rail-section">
+            <div className="rail-heading">Reference Cases</div>
+            <div className="benchmark-list">
+              {benchmarks.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-testid={`benchmark-${item.id}`}
+                  className={`benchmark-btn ${selectedBenchmarkId === item.id ? 'active' : ''}`}
+                  onClick={() => selectBenchmark(item)}
+                >
+                  <div className="benchmark-top">
+                    <span>{item.title}</span>
+                    <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
+                  </div>
+                  <div className="benchmark-meta">{item.domain}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="rail-divider" />
-
-          <div className="rail-heading">Kernel Resource Bounds</div>
-          <div className="slider-row">
-            <div className="slider-label">
-              <span>Max Iterations (I_max)</span>
-              <span>{maxIterations}</span>
+          <div className="rail-section">
+            <div className="rail-heading">Kernel Resource Bounds</div>
+            <div className="slider-row">
+              <div className="slider-label">
+                <span>Max Iterations (I_max)</span>
+                <span>{maxIterations}</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={8}
+                step={1}
+                aria-label="Max iterations"
+                value={maxIterations}
+                onChange={(e) => setMaxIterations(Number(e.target.value))}
+              />
             </div>
-            <input
-              type="range"
-              min={1}
-              max={8}
-              step={1}
-              aria-label="Max iterations"
-              value={maxIterations}
-              onChange={(e) => setMaxIterations(Number(e.target.value))}
-            />
-          </div>
-          <div className="slider-row">
-            <div className="slider-label">
-              <span>SMT Timeout</span>
-              <span>{smtTimeoutMs} ms</span>
+            <div className="slider-row">
+              <div className="slider-label">
+                <span>SMT Timeout</span>
+                <span>{smtTimeoutMs} ms</span>
+              </div>
+              <input
+                type="range"
+                min={500}
+                max={5000}
+                step={250}
+                aria-label="SMT timeout milliseconds"
+                value={smtTimeoutMs}
+                onChange={(e) => setSmtTimeoutMs(Number(e.target.value))}
+              />
             </div>
-            <input
-              type="range"
-              min={500}
-              max={5000}
-              step={250}
-              aria-label="SMT timeout milliseconds"
-              value={smtTimeoutMs}
-              onChange={(e) => setSmtTimeoutMs(Number(e.target.value))}
-            />
           </div>
 
           {mode === 'live' && (
-            <>
-              <div className="rail-divider" />
+            <div className="rail-section">
               <div className="rail-heading">Live BYOK Key</div>
               <div className="field" style={{ marginBottom: 0 }}>
                 <label htmlFor="apiKeyInput">Gemini API Key (per request)</label>
@@ -264,12 +271,12 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                   onChange={(e) => setApiKey(e.target.value)}
                 />
               </div>
-            </>
+            </div>
           )}
         </aside>
 
         <div className="wb-main">
-          <section className="panel">
+          <section className="wb-editor-band">
             <div className="field">
               <label htmlFor="objectiveInput">Objective / Formal Claim</label>
               <input
@@ -293,17 +300,17 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
             </div>
           </section>
 
-          <section className="panel">
+          <section className="wb-result-band">
             {!result ? (
               <div
-                style={{ textAlign: 'center', padding: '44px 16px', color: 'var(--muted)' }}
+                style={{ padding: '48px 0', color: 'var(--muted)' }}
                 data-testid="empty-state"
               >
-                <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+                <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: '0.96rem' }}>
                   Select a reference case or edit the specification, then select Run Verification.
                 </p>
-                <p style={{ margin: 0, fontSize: '0.82rem' }}>
-                  Replay mode executes offline with deterministic candidates and real formal checks.
+                <p style={{ margin: 0, fontSize: '0.84rem', fontFamily: 'var(--font-mono)' }}>
+                  REPLAY MODE EXECUTES OFFLINE WITH DETERMINISTIC CANDIDATES AND FORMAL CHECKS.
                 </p>
               </div>
             ) : (
@@ -314,19 +321,26 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                     flexWrap: 'wrap',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: 10,
-                    marginBottom: 14,
+                    gap: 12,
+                    marginBottom: 16,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <span className={`badge ${result.ubk.status}`} data-testid="verdict-badge">
                       {result.ubk.status}
                     </span>
-                    <span className="status-chip" style={{ display: 'inline-flex' }} data-testid="certificate-type">
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.76rem',
+                        color: 'var(--text)',
+                      }}
+                      data-testid="certificate-type"
+                    >
                       {result.ubk.certificate.certificate_type}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--muted)' }}>
-                      {result.mode.toUpperCase()} · {result.timingMs.total} ms
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
+                      {result.mode.toUpperCase()} · {result.timingMs.total} MS
                     </span>
                   </div>
                   <button type="button" className="btn-ghost" onClick={exportJson}>
@@ -438,7 +452,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                             <strong>{c.id}</strong> · {c.domain} · confidence {c.confidence.toFixed(2)}
                           </div>
                           <div style={{ fontSize: '0.86rem', marginTop: 4 }}>{c.expression}</div>
-                          {c.smtlib && <pre className="code-block">{c.smtlib.trim()}</pre>}
+                          {c.smtlib && <pre className="code-block" style={{ marginTop: 10 }}>{c.smtlib.trim()}</pre>}
                         </div>
                       ))
                     )}
@@ -458,7 +472,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
 
                 {activeTab === 'dag' && (
                   <div>
-                    <div className="dot-canvas" style={{ marginBottom: 16 }}>
+                    <div className="dot-canvas" style={{ marginBottom: 20, border: '1px solid var(--line)' }}>
                       <div className="dag-flow">
                         {result.plan.nodes.map((node, idx) => (
                           <React.Fragment key={node.id}>
@@ -467,7 +481,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                                 <strong>{node.id} · {node.name}</strong>
                                 <span style={{ color: 'var(--muted)' }}>{node.modality}</span>
                               </div>
-                              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                              <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                                 {node.description}
                               </div>
                             </div>
@@ -480,7 +494,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                     <div className="label-caps">Emitted Artifacts ({result.artifacts.length})</div>
                     {result.artifacts.map((art, i) => (
                       <div className="artifact-card" key={art.id || i}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', marginBottom: 8 }}>
                           <strong>{art.title || art.id || `Artifact ${i + 1}`}</strong> · {art.type}
                         </div>
                         <pre className="code-block" style={{ marginBottom: 0 }}>{art.content}</pre>

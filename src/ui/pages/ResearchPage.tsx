@@ -8,7 +8,7 @@ interface ResearchPageProps {
 export const ResearchPage: React.FC<ResearchPageProps> = ({ onNavigate }) => {
   return (
     <main className="container-narrow prose" data-testid="research-page">
-      <div className="kicker">Technical Note · Turwin Labs · 2026</div>
+      <div className="section-code">TECHNICAL NOTE · TURWIN LABS · 2026</div>
       <h1>Bounded Formal Verification for Generative Systems</h1>
 
       <div className="abstract">

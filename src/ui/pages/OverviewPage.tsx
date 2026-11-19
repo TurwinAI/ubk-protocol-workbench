@@ -83,6 +83,97 @@ node_04 [Verification Summary]   -> artifact: report`,
   },
 ];
 
+const BifurcationTrace: React.FC<{ status?: string; running: boolean }> = ({ status, running }) => {
+  const isPass = status === 'PASS';
+  const isImpossible = status === 'IMPOSSIBLE' || status === 'FAIL';
+
+  return (
+    <svg
+      className="trace-svg"
+      viewBox="0 0 360 190"
+      role="img"
+      aria-label="Kernel bifurcation decision trace"
+    >
+      {/* Entry spine: CLAIM -> INVARIANTS -> GATE */}
+      <line x1="16" y1="95" x2="178" y2="95" stroke="var(--cobalt)" strokeWidth="2" />
+
+      {/* Upper branch: PASS / UNIQUE-CORRECT */}
+      <polyline
+        points="178,95 232,42 332,42"
+        fill="none"
+        stroke={isPass ? 'var(--pass-fg)' : 'var(--line)'}
+        strokeWidth={isPass ? '2.5' : '1.25'}
+      />
+
+      {/* Lower branch: IMPOSSIBLE / IMPCERT */}
+      <polyline
+        points="178,95 232,148 332,148"
+        fill="none"
+        stroke={isImpossible ? 'var(--signal)' : 'var(--line)'}
+        strokeWidth={isImpossible ? '2.5' : '1.25'}
+      />
+
+      {/* Nodes */}
+      <rect x="12" y="91" width="8" height="8" fill="var(--cobalt)" />
+      <rect x="92" y="91" width="8" height="8" fill="var(--cobalt)" />
+      <rect x="174" y="91" width="8" height="8" fill={running ? 'var(--amber)' : 'var(--cobalt)'} />
+
+      <rect
+        x="328"
+        y="38"
+        width="8"
+        height="8"
+        fill={isPass ? 'var(--pass-fg)' : 'var(--bg-recessed)'}
+        stroke={isPass ? 'var(--pass-fg)' : 'var(--line-strong)'}
+        strokeWidth="1.5"
+      />
+      <rect
+        x="328"
+        y="144"
+        width="8"
+        height="8"
+        fill={isImpossible ? 'var(--signal)' : 'var(--bg-recessed)'}
+        stroke={isImpossible ? 'var(--signal)' : 'var(--line-strong)'}
+        strokeWidth="1.5"
+      />
+
+      {/* Mono Labels */}
+      <text x="12" y="78" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
+        CLAIM
+      </text>
+      <text x="96" y="78" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
+        5 INVARIANTS
+      </text>
+      <text x="178" y="122" textAnchor="middle" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="9" letterSpacing="0.8">
+        SMT + AXIOMS
+      </text>
+
+      <text
+        x="336"
+        y="28"
+        textAnchor="end"
+        fill={isPass ? 'var(--pass-fg)' : 'var(--muted)'}
+        fontFamily="var(--font-mono)"
+        fontSize="9.5"
+        letterSpacing="0.8"
+      >
+        PASS / UNIQUE-CORRECT
+      </text>
+      <text
+        x="336"
+        y="170"
+        textAnchor="end"
+        fill={isImpossible ? 'var(--fail-fg)' : 'var(--muted)'}
+        fontFamily="var(--font-mono)"
+        fontSize="9.5"
+        letterSpacing="0.8"
+      >
+        IMPOSSIBLE / IMPCERT
+      </text>
+    </svg>
+  );
+};
+
 export const OverviewPage: React.FC<OverviewPageProps> = ({
   health,
   benchmarks,
@@ -137,163 +228,203 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <main className="container">
-      <section className="hero-split">
-        <div>
-          <div className="kicker">Turwin Labs Technical Prototype · MIT License</div>
+      <section className="hero-band">
+        <div className="section-code">00 / TURWIN LABS · OPEN RESEARCH PROTOTYPE · MIT LICENSE</div>
+
+        <div className="hero-headline-row">
           <h1 className="hero-h1">Formal bounds for generative reasoning.</h1>
-          <p className="hero-copy">
-            Language models draft code and technical procedures fast, yet they often propose designs
-            that violate physical laws or known mathematical bounds. The Universal Bounds Kernel
-            checks every candidate against formal invariants, SMT proofs, and twelve domain axiom
-            tables before any protocol runs.
-          </p>
-          <p className="hero-copy">
-            Each run halts inside fixed iteration and failure caps. The kernel returns a signed
-            verification certificate, a disproof witness, or an explicit map of claims that remain
-            unproved.
-          </p>
 
-          <div className="cta-row">
-            <button
-              type="button"
-              className="btn-primary"
-              data-testid="hero-open-workbench"
-              onClick={() => onNavigate('/workbench')}
-            >
-              Open Workbench
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              data-testid="hero-open-research"
-              onClick={() => onNavigate('/research')}
-            >
-              Read Research Note
-            </button>
-            <a className="btn-secondary" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-              Source on GitHub
-            </a>
-          </div>
+          <div className="hero-side">
+            <p className="hero-copy">
+              Language models draft code and technical procedures fast, yet they often propose
+              designs that violate physical laws or known mathematical bounds. The Universal Bounds
+              Kernel checks every candidate against formal invariants, SMT proofs, and twelve domain
+              axiom tables before any protocol runs.
+            </p>
+            <p className="hero-copy">
+              Each run halts inside fixed iteration and failure caps. The kernel returns a signed
+              verification certificate, a disproof witness, or an explicit map of claims that remain
+              unproved.
+            </p>
 
-          <div className="meta-strip">
-            <div>
-              SOLVER{' '}
-              <strong>
-                {health?.runtime === 'node' ? 'Z3 WASM (Node)' : 'Edge SMT + Local Z3'}
-              </strong>
-            </div>
-            <div>
-              AXIOMS <strong>12 Domains</strong>
-            </div>
-            <div>
-              BENCHMARKS <strong>{benchmarks.length || 4} Cases</strong>
-            </div>
-            <div>
-              LICENSE <strong>MIT</strong>
+            <div className="cta-row">
+              <button
+                type="button"
+                className="btn-primary"
+                data-testid="hero-open-workbench"
+                onClick={() => onNavigate('/workbench')}
+              >
+                Open Workbench
+              </button>
+              <button
+                type="button"
+                className="link-action"
+                data-testid="hero-open-research"
+                onClick={() => onNavigate('/research')}
+              >
+                Read Research Note
+              </button>
+              <a className="link-action" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+                Source on GitHub
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="console-panel" data-testid="hero-console">
-          <div className="console-bar">
-            <span>LIVE KERNEL CONSOLE · REPLAY MODE</span>
-            <span>{running ? 'SOLVING...' : liveResult ? `${liveResult.timingMs.total} ms` : 'READY'}</span>
+        <div className="console-instrument" data-testid="hero-console">
+          <div className="console-head">
+            <span>LIVE KERNEL INSTRUMENT · REPLAY MODE</span>
+            <div className="console-head-right">
+              <span>{running ? 'SOLVING...' : liveResult ? `${liveResult.timingMs.total} MS` : 'READY'}</span>
+              <span>
+                {health?.runtime === 'node' ? 'Z3 WASM (NODE)' : 'EDGE SMT + LOCAL Z3'}
+              </span>
+            </div>
           </div>
-          <div className="console-body">
-            <div className="case-tabs">
-              {benchmarks.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  title={item.title}
-                  data-testid={`hero-case-${item.id}`}
-                  className={`case-tab ${selectedId === item.id ? 'active' : ''}`}
-                  onClick={() => handleSelectCase(item)}
-                >
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {SHORT_CASE_LABELS[item.id] || item.title}
-                  </span>
-                  <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
-                </button>
-              ))}
-            </div>
 
-            <div className="console-input-row">
-              <input
-                type="text"
-                className="console-input"
-                aria-label="Claim to verify"
-                value={claimInput}
-                onChange={(e) => {
-                  setSelectedId('');
-                  setClaimInput(e.target.value);
-                }}
-              />
+          <div className="case-strip">
+            {benchmarks.map((item) => (
               <button
+                key={item.id}
                 type="button"
-                className="btn-primary"
-                disabled={running || !claimInput.trim()}
-                onClick={() => void runLiveConsole(claimInput, selectedId || undefined)}
+                title={item.title}
+                data-testid={`hero-case-${item.id}`}
+                className={`case-tab ${selectedId === item.id ? 'active' : ''}`}
+                onClick={() => handleSelectCase(item)}
               >
-                {running ? 'Checking' : 'Verify'}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {SHORT_CASE_LABELS[item.id] || item.title}
+                </span>
+                <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
               </button>
+            ))}
+          </div>
+
+          <div className="console-grid">
+            <div className="console-left">
+              <div className="console-input-row">
+                <input
+                  type="text"
+                  className="console-input"
+                  aria-label="Claim to verify"
+                  value={claimInput}
+                  onChange={(e) => {
+                    setSelectedId('');
+                    setClaimInput(e.target.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn-primary btn-primary-sm"
+                  disabled={running || !claimInput.trim()}
+                  onClick={() => void runLiveConsole(claimInput, selectedId || undefined)}
+                >
+                  {running ? 'Checking' : 'Verify'}
+                </button>
+              </div>
+
+              {liveError && <div className="error-banner">{liveError}</div>}
+
+              {liveResult && (
+                <>
+                  <div className="ledger-row">
+                    <div className="ledger-cell">
+                      <div className="kv-label">Verdict</div>
+                      <div className="kv-val">
+                        <span className={`badge ${liveResult.ubk.status}`}>
+                          {liveResult.ubk.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ledger-cell">
+                      <div className="kv-label">Certificate</div>
+                      <div className="kv-val">{liveResult.ubk.certificate.certificate_type}</div>
+                    </div>
+                    <div className="ledger-cell">
+                      <div className="kv-label">SMT Solver</div>
+                      <div className="kv-val">
+                        {liveResult.smtResult.verdict} ({liveResult.smtResult.soundness})
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="kv-label">Solver Proof Trace</div>
+                  <pre className="console-trace">
+                    {liveResult.smtResult.proof || liveResult.scientificValidation.reasoning_summary}
+                  </pre>
+
+                  <div className="console-foot">
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
+                      SHA-256 · {liveResult.ubk.certificate.fingerprint.slice(0, 24)}...
+                    </span>
+                    <button
+                      type="button"
+                      className="link-action"
+                      style={{ minHeight: 32, fontSize: '0.7rem' }}
+                      onClick={() => onLaunchBenchmark(selectedId || 'inplace-sort-sat')}
+                    >
+                      Inspect Full Run in Workbench
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
-            {liveError && <div className="error-banner">{liveError}</div>}
-
-            {liveResult && (
-              <div>
-                <div className="kv-grid" style={{ marginBottom: 10 }}>
-                  <div className="kv">
-                    <div className="kv-label">Verdict</div>
-                    <div className="kv-val" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className={`badge ${liveResult.ubk.status}`}>{liveResult.ubk.status}</span>
-                    </div>
-                  </div>
-                  <div className="kv">
-                    <div className="kv-label">Certificate</div>
-                    <div className="kv-val">{liveResult.ubk.certificate.certificate_type}</div>
-                  </div>
-                  <div className="kv">
-                    <div className="kv-label">SMT Solver</div>
-                    <div className="kv-val">
-                      {liveResult.smtResult.verdict} ({liveResult.smtResult.soundness})
-                    </div>
-                  </div>
-                </div>
-
-                <div className="label-caps" style={{ marginTop: 8 }}>
-                  Solver Proof Trace
-                </div>
-                <pre className="code-block" style={{ marginBottom: 10 }}>
-                  {liveResult.smtResult.proof || liveResult.scientificValidation.reasoning_summary}
-                </pre>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--muted)' }}>
-                    SHA-256: {liveResult.ubk.certificate.fingerprint.slice(0, 20)}...
-                  </span>
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    onClick={() => onLaunchBenchmark(selectedId || 'inplace-sort-sat')}
-                  >
-                    Inspect Full Run in Workbench
-                  </button>
-                </div>
+            <div className="console-right">
+              <div className="kv-label" style={{ marginBottom: 8 }}>
+                DECISION TRACE · TURWIN-INV-V4.0-FS
               </div>
-            )}
+              <BifurcationTrace status={liveResult?.ubk.status} running={running} />
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.68rem',
+                  color: 'var(--muted)',
+                  borderTop: '1px solid var(--line)',
+                  paddingTop: 10,
+                }}
+              >
+                {liveResult
+                  ? `STOP: ${liveResult.ubk.stopReason} · AXIOMS: ${liveResult.scientificValidation.classification.toUpperCase()}`
+                  : 'AWAITING EVALUATION'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="spec-strip">
+          <div className="spec-cell">
+            <div className="spec-k">Solver Engine</div>
+            <div className="spec-v">
+              {health?.runtime === 'node' ? 'Z3 WebAssembly (Node)' : 'Edge SMT + Local Z3'}
+            </div>
+          </div>
+          <div className="spec-cell">
+            <div className="spec-k">Axiom Database</div>
+            <div className="spec-v">12 Scientific Domains</div>
+          </div>
+          <div className="spec-cell">
+            <div className="spec-k">Reference Suite</div>
+            <div className="spec-v">{benchmarks.length || 4} Verifiable Cases</div>
+          </div>
+          <div className="spec-cell">
+            <div className="spec-k">Distribution</div>
+            <div className="spec-v">MIT Open Source</div>
           </div>
         </div>
       </section>
 
-      <section className="stepper-section">
-        <div>
+      <section className="section-band">
+        <div className="section-code">01 / MECHANISM</div>
+        <div className="section-head-split">
           <h2 className="section-heading">Verification Pipeline</h2>
           <p className="section-intro">
             Select a stage to inspect the formal data passed between the language model and the
             compiled plan graph.
           </p>
+        </div>
+
+        <div className="stepper-grid">
           <div className="step-list">
             {MECHANISM_STAGES.map((s, idx) => (
               <button
@@ -311,55 +442,53 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
               </button>
             ))}
           </div>
-        </div>
 
-        <div className="dot-canvas">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
-              color: 'var(--muted)',
-            }}
-          >
-            <span>STAGE {stage.num} · {stage.artifactLabel}</span>
-            <span>DETERMINISTIC OUTPUT</span>
+          <div className="dot-canvas">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+                paddingBottom: 12,
+                borderBottom: '1px solid var(--line)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.7rem',
+                letterSpacing: '0.1em',
+                color: 'var(--muted)',
+              }}
+            >
+              <span>STAGE {stage.num} · {stage.artifactLabel}</span>
+              <span>DETERMINISTIC ARTIFACT</span>
+            </div>
+            <pre className="code-block" style={{ margin: 0, flex: 1 }}>
+              {stage.code}
+            </pre>
           </div>
-          <pre className="code-block" style={{ margin: 0 }}>
-            {stage.code}
-          </pre>
         </div>
       </section>
 
-      <section>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 16,
-            marginBottom: 16,
-            flexWrap: 'wrap',
-          }}
-        >
+      <section className="section-band">
+        <div className="section-code">02 / BENCHMARKS</div>
+        <div className="section-head-split">
           <div>
             <h2 className="section-heading">Reference Test Suite</h2>
-            <p className="section-intro" style={{ marginBottom: 0 }}>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap' }}>
+            <p className="section-intro">
               Four benchmark cases ship in the MIT repo. Each runs offline in replay mode or with a
               user-supplied Gemini API key.
             </p>
+            <button type="button" className="link-action" onClick={() => onNavigate('/open-source')}>
+              Read Repository Guide
+            </button>
           </div>
-          <button type="button" className="btn-secondary" onClick={() => onNavigate('/open-source')}>
-            Read Repository Guide
-          </button>
         </div>
 
         <table className="data-table">
           <thead>
             <tr>
+              <th>No.</th>
               <th>Case</th>
               <th>Domain</th>
               <th>Expected</th>
@@ -367,15 +496,18 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </tr>
           </thead>
           <tbody>
-            {benchmarks.map((item) => (
+            {benchmarks.map((item, idx) => (
               <tr key={item.id}>
+                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', color: 'var(--muted)', width: 52 }}>
+                  0{idx + 1}
+                </td>
                 <td>
-                  <div style={{ fontWeight: 600 }}>{item.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: 2 }}>
+                  <div style={{ fontWeight: 500, fontSize: '0.96rem' }}>{item.title}</div>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 4 }}>
                     {item.summary}
                   </div>
                 </td>
-                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--muted)' }}>
+                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                   {item.domain}
                 </td>
                 <td>
@@ -388,7 +520,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                     data-testid={`overview-benchmark-${item.id}`}
                     onClick={() => onLaunchBenchmark(item.id)}
                   >
-                    Open
+                    Open Case
                   </button>
                 </td>
               </tr>

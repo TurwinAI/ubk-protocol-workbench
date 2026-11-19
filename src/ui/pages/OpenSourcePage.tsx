@@ -26,7 +26,7 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
 
   return (
     <main className="container-narrow prose" data-testid="open-source-page">
-      <div className="kicker">Open Source · TurwinAI · MIT License</div>
+      <div className="section-code">OPEN SOURCE · TURWINAI · MIT LICENSE</div>
       <h1>The Repository in Plain Terms</h1>
 
       <div className="abstract">
@@ -76,7 +76,7 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
       <h2>2. Directory Map</h2>
       <p>The codebase contains five directories with distinct roles:</p>
 
-      <div className="panel" style={{ padding: '6px 16px', marginBottom: 20 }}>
+      <div className="tree-table">
         <div className="tree-row">
           <div className="tree-path">src/core-engine/</div>
           <div>
