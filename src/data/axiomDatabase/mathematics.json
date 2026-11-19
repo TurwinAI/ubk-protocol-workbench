@@ -1,0 +1,88 @@
+{
+  "domain": "mathematics",
+  "version": "1.0",
+  "description": "Proven mathematical impossibilities",
+  "axioms": [
+    {
+      "id": "godel_incompleteness",
+      "name": "Gödel's Incompleteness Theorem",
+      "statement": "No consistent formal system capable of expressing arithmetic can prove its own consistency",
+      "formal": "∀ consistent system S with arithmetic: ¬(S ⊢ Con(S))",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "complete and consistent formal system",
+        "proves its own consistency",
+        "complete axiomatization of mathematics"
+      ]
+    },
+    {
+      "id": "trisection_impossible",
+      "name": "Angle Trisection Impossibility",
+      "statement": "General angle trisection is impossible with compass and straightedge alone",
+      "formal": "¬∃ construction: trisect(arbitrary_angle) using {compass, straightedge}",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "trisect any angle with compass and straightedge",
+        "geometric angle trisection"
+      ]
+    },
+    {
+      "id": "squaring_circle_impossible",
+      "name": "Squaring the Circle Impossibility",
+      "statement": "Constructing a square with the same area as a given circle using compass and straightedge is impossible",
+      "formal": "¬∃ construction: square_area == π·r² using {compass, straightedge}",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "squaring the circle",
+        "construct square equal to circle"
+      ]
+    },
+    {
+      "id": "uncountable_reals",
+      "name": "Uncountability of Real Numbers",
+      "statement": "The real numbers cannot be put in one-to-one correspondence with the natural numbers",
+      "formal": "¬∃ bijection f: ℕ → ℝ",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "enumerate all real numbers",
+        "list all decimals",
+        "countable set of all reals"
+      ]
+    }
+  ],
+  "open_conjectures": [
+    {
+      "id": "riemann_hypothesis",
+      "name": "Riemann Hypothesis",
+      "statement": "All non-trivial zeros of the Riemann zeta function have real part 1/2",
+      "implication": "Claims to prove or disprove should be FLAGGED for expert review",
+      "flag_patterns": [
+        "proves riemann hypothesis",
+        "disproves riemann hypothesis",
+        "solves riemann"
+      ]
+    },
+    {
+      "id": "collatz_conjecture",
+      "name": "Collatz Conjecture",
+      "statement": "The Collatz sequence always reaches 1",
+      "implication": "Claims to prove should be FLAGGED",
+      "flag_patterns": [
+        "proves collatz",
+        "solves collatz"
+      ]
+    }
+  ]
+}

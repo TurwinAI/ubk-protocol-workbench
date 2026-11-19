@@ -1,0 +1,52 @@
+{
+  "domain": "materials",
+  "version": "1.0",
+  "description": "Manufacturing and materials engineering bounds",
+  "axioms": [
+    {
+      "id": "min_feature_size",
+      "name": "Minimum Feature Size",
+      "statement": "Manufactured feature size must not be below process minimum.",
+      "formal": "feature >= feature_min",
+      "z3_encoding": {
+        "variables": ["feature: Real", "feature_min: Real"],
+        "constraints": ["feature >= feature_min"]
+      },
+      "violations": [
+        "feature size below",
+        "minimum feature size below",
+        "sub-minimum feature"
+      ]
+    },
+    {
+      "id": "tolerance_stack",
+      "name": "Tolerance Stack Limit",
+      "statement": "Total tolerance stack must remain within allowable bounds.",
+      "formal": "tolerance <= tolerance_max",
+      "z3_encoding": {
+        "variables": ["tolerance: Real", "tolerance_max: Real"],
+        "constraints": ["tolerance <= tolerance_max"]
+      },
+      "violations": [
+        "out of tolerance",
+        "tolerance stack exceed",
+        "tolerance above"
+      ]
+    },
+    {
+      "id": "material_compatibility",
+      "name": "Material Compatibility",
+      "statement": "Selected materials must be compatible to avoid degradation.",
+      "formal": "compatible = true",
+      "z3_encoding": {
+        "variables": ["compatible: Bool"],
+        "constraints": ["compatible = true"]
+      },
+      "violations": [
+        "incompatible materials",
+        "galvanic corrosion ignored",
+        "material mismatch"
+      ]
+    }
+  ]
+}

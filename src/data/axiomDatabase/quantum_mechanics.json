@@ -1,0 +1,69 @@
+{
+  "domain": "quantum_mechanics",
+  "version": "1.0",
+  "description": "Fundamental axioms of Quantum Mechanics",
+  "axioms": [
+    {
+      "id": "heisenberg_uncertainty",
+      "name": "Heisenberg Uncertainty Principle",
+      "statement": "Position and momentum cannot both be precisely measured simultaneously",
+      "formal": "Δx · Δp >= ℏ/2",
+      "z3_encoding": {
+        "variables": ["delta_x: Real", "delta_p: Real", "hbar: Real"],
+        "constraints": ["delta_x * delta_p >= hbar / 2", "hbar == 1.054571817e-34"]
+      },
+      "violations": [
+        "perfect measurement",
+        "bypasses uncertainty",
+        "exact position and momentum",
+        "violates uncertainty principle"
+      ]
+    },
+    {
+      "id": "no_cloning_theorem",
+      "name": "No-Cloning Theorem",
+      "statement": "Perfect copies of arbitrary unknown quantum states are impossible",
+      "formal": "¬∃ operation U: U|ψ⟩|0⟩ = |ψ⟩|ψ⟩ for all |ψ⟩",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "clone quantum states",
+        "copy quantum information",
+        "duplicate qubits",
+        "replicate quantum state"
+      ]
+    },
+    {
+      "id": "no_ftl_communication",
+      "name": "No Faster-Than-Light Communication via Entanglement",
+      "statement": "Quantum entanglement cannot be used to transmit information faster than light",
+      "formal": "information_transfer_rate <= c",
+      "z3_encoding": {
+        "variables": ["info_rate: Real", "c: Real"],
+        "constraints": ["info_rate <= c"]
+      },
+      "violations": [
+        "FTL communication via entanglement",
+        "instantaneous information transfer",
+        "superluminal signaling"
+      ]
+    },
+    {
+      "id": "wavefunction_collapse",
+      "name": "Measurement Causes State Change",
+      "statement": "Observation of a quantum system changes its state",
+      "formal": "measure(|ψ⟩) → |eigenstate⟩",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "measure without disturbing",
+        "observe without collapse",
+        "non-destructive quantum measurement of unknown state"
+      ]
+    }
+  ]
+}

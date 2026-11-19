@@ -1,0 +1,36 @@
+{
+  "domain": "biology",
+  "version": "1.0",
+  "description": "Fundamental biological constraints",
+  "axioms": [
+    {
+      "id": "no_spontaneous_generation",
+      "name": "No Spontaneous Generation",
+      "statement": "Complex life cannot arise spontaneously from non-living matter under normal conditions",
+      "formal": "∀ life: ∃ prior_life that produced it",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "creates life from scratch",
+        "spontaneous abiogenesis",
+        "generates living organism from chemicals instantly"
+      ]
+    },
+    {
+      "id": "dna_information_limit",
+      "name": "DNA Information Limit",
+      "statement": "Organisms cannot inherit acquired characteristics through DNA",
+      "formal": "changes_during_lifetime ⊄ DNA_passed_to_offspring",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "lamarckian inheritance",
+        "inherit acquired traits genetically"
+      ]
+    }
+  ]
+}

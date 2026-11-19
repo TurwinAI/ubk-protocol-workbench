@@ -1,0 +1,53 @@
+{
+  "domain": "thermodynamics",
+  "version": "1.0",
+  "description": "Fundamental axioms of Thermodynamics",
+  "axioms": [
+    {
+      "id": "first_law",
+      "name": "First Law of Thermodynamics (Energy Conservation)",
+      "statement": "Energy cannot be created or destroyed, only transformed",
+      "formal": "energy_in == energy_out + work + heat_dissipated",
+      "z3_encoding": {
+        "variables": ["energy_in: Real", "energy_out: Real", "work: Real", "heat: Real"],
+        "constraints": ["energy_in == energy_out + work + heat"]
+      },
+      "violations": [
+        "over unity",
+        "free energy",
+        "perpetual motion",
+        "creates energy",
+        "more output than input"
+      ]
+    },
+    {
+      "id": "second_law",
+      "name": "Second Law of Thermodynamics (Entropy)",
+      "statement": "The total entropy of an isolated system can only increase over time",
+      "formal": "entropy_final >= entropy_initial",
+      "z3_encoding": {
+        "variables": ["entropy_initial: Real", "entropy_final: Real"],
+        "constraints": ["entropy_final >= entropy_initial"]
+      },
+      "violations": [
+        "decreases entropy spontaneously",
+        "reverses entropy",
+        "perpetual cooling"
+      ]
+    },
+    {
+      "id": "carnot_efficiency",
+      "name": "Carnot Efficiency Limit",
+      "statement": "No heat engine can be more efficient than a Carnot engine",
+      "formal": "efficiency <= 1 - (T_cold / T_hot)",
+      "z3_encoding": {
+        "variables": ["efficiency: Real", "T_cold: Real", "T_hot: Real"],
+        "constraints": ["efficiency <= 1 - (T_cold / T_hot)", "T_hot > T_cold", "T_cold > 0"]
+      },
+      "violations": [
+        "exceeds Carnot efficiency",
+        "100% heat engine efficiency"
+      ]
+    }
+  ]
+}

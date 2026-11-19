@@ -1,0 +1,58 @@
+{
+  "domain": "complexity_theory",
+  "version": "1.0",
+  "description": "Computational Complexity Theory axioms and open conjectures",
+  "axioms": [
+    {
+      "id": "halting_problem",
+      "name": "Halting Problem Undecidability",
+      "statement": "No algorithm can determine whether an arbitrary program will halt",
+      "formal": "¬∃ algorithm H: ∀ program P, input I: H(P, I) = halts(P, I)",
+      "z3_encoding": {
+        "variables": [],
+        "constraints": []
+      },
+      "violations": [
+        "solves halting problem",
+        "determines if any program halts"
+      ]
+    },
+    {
+      "id": "comparison_sort_lower_bound",
+      "name": "Comparison Sort Lower Bound",
+      "statement": "Comparison-based sorting requires Ω(n log n) comparisons in the worst case",
+      "formal": "comparisons >= n * log2(n) - n",
+      "z3_encoding": {
+        "variables": ["comparisons: Int", "n: Int"],
+        "constraints": ["comparisons >= n * log2(n) - n", "n > 0"]
+      },
+      "violations": [
+        "comparison sort faster than n log n",
+        "O(n) comparison sort"
+      ]
+    }
+  ],
+  "open_conjectures": [
+    {
+      "id": "p_vs_np",
+      "name": "P vs NP Conjecture",
+      "statement": "It is unknown whether P = NP or P ≠ NP",
+      "implication": "Claims to solve NP-complete problems in polynomial time should be FLAGGED, not rejected",
+      "flag_patterns": [
+        "solves NP-complete in polynomial time",
+        "P = NP",
+        "polynomial time SAT solver"
+      ]
+    },
+    {
+      "id": "factoring_hardness",
+      "name": "Integer Factoring Hardness",
+      "statement": "It is unknown whether integer factoring is in P",
+      "implication": "Claims to factor in polynomial time should be FLAGGED",
+      "flag_patterns": [
+        "polynomial time factoring",
+        "fast factoring algorithm"
+      ]
+    }
+  ]
+}

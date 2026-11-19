@@ -1,0 +1,68 @@
+{
+  "domain": "electrical",
+  "version": "1.0",
+  "description": "Fundamental electrical engineering bounds",
+  "axioms": [
+    {
+      "id": "ohms_law",
+      "name": "Ohm's Law",
+      "statement": "For linear resistors, voltage equals current times resistance (V = I * R).",
+      "formal": "V = I * R",
+      "z3_encoding": {
+        "variables": ["V: Real", "I: Real", "R: Real"],
+        "constraints": ["V = I * R"]
+      },
+      "violations": [
+        "violates ohm",
+        "current without voltage",
+        "voltage without current",
+        "zero resistance with finite voltage"
+      ]
+    },
+    {
+      "id": "power_limit",
+      "name": "Power Limit",
+      "statement": "Electrical power is P = V * I and must not exceed a maximum safe limit.",
+      "formal": "P = V * I ∧ P <= P_max",
+      "z3_encoding": {
+        "variables": ["P: Real", "V: Real", "I: Real", "P_max: Real"],
+        "constraints": ["P = V * I", "P <= P_max"]
+      },
+      "violations": [
+        "power exceeds limit",
+        "over power limit",
+        "overpower"
+      ]
+    },
+    {
+      "id": "nyquist_sampling",
+      "name": "Nyquist Sampling Theorem",
+      "statement": "Sampling frequency must be at least twice the maximum signal frequency.",
+      "formal": "fs >= 2 * f_max",
+      "z3_encoding": {
+        "variables": ["fs: Real", "f_max: Real"],
+        "constraints": ["fs >= 2 * f_max"]
+      },
+      "violations": [
+        "below nyquist",
+        "sub-nyquist",
+        "undersample"
+      ]
+    },
+    {
+      "id": "junction_temperature",
+      "name": "Junction Temperature Limit",
+      "statement": "Semiconductor junction temperature must remain below the maximum rating.",
+      "formal": "Tj <= Tj_max",
+      "z3_encoding": {
+        "variables": ["Tj: Real", "Tj_max: Real"],
+        "constraints": ["Tj <= Tj_max"]
+      },
+      "violations": [
+        "junction temp above",
+        "thermal derating ignored",
+        "exceed junction temperature"
+      ]
+    }
+  ]
+}

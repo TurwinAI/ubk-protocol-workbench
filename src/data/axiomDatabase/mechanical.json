@@ -1,0 +1,67 @@
+{
+  "domain": "mechanical",
+  "version": "1.0",
+  "description": "Fundamental mechanical engineering bounds",
+  "axioms": [
+    {
+      "id": "yield_strength",
+      "name": "Yield Strength Limit",
+      "statement": "Applied stress must not exceed material yield strength.",
+      "formal": "sigma <= sigma_y",
+      "z3_encoding": {
+        "variables": ["sigma: Real", "sigma_y: Real"],
+        "constraints": ["sigma <= sigma_y"]
+      },
+      "violations": [
+        "stress above yield",
+        "exceeds yield strength",
+        "yield strength ignored"
+      ]
+    },
+    {
+      "id": "buckling_limit",
+      "name": "Euler Buckling Limit",
+      "statement": "Applied load must not exceed critical buckling load.",
+      "formal": "P <= Pcr",
+      "z3_encoding": {
+        "variables": ["P: Real", "Pcr: Real"],
+        "constraints": ["P <= Pcr"]
+      },
+      "violations": [
+        "buckling ignored",
+        "exceed critical load",
+        "above critical buckling load"
+      ]
+    },
+    {
+      "id": "safety_factor",
+      "name": "Safety Factor Requirement",
+      "statement": "Design safety factor must meet minimum threshold.",
+      "formal": "FoS >= FoS_min",
+      "z3_encoding": {
+        "variables": ["FoS: Real", "FoS_min: Real"],
+        "constraints": ["FoS >= FoS_min"]
+      },
+      "violations": [
+        "safety factor below",
+        "insufficient safety factor",
+        "factor of safety <"
+      ]
+    },
+    {
+      "id": "fatigue_life",
+      "name": "Fatigue Life Requirement",
+      "statement": "Component fatigue life must exceed minimum cycle count.",
+      "formal": "N >= N_min",
+      "z3_encoding": {
+        "variables": ["N: Real", "N_min: Real"],
+        "constraints": ["N >= N_min"]
+      },
+      "violations": [
+        "fatigue life below",
+        "cycles below minimum",
+        "fatigue life under"
+      ]
+    }
+  ]
+}

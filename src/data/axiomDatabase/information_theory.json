@@ -1,0 +1,57 @@
+{
+  "domain": "information_theory",
+  "version": "1.0",
+  "description": "Fundamental axioms of Shannon Information Theory",
+  "axioms": [
+    {
+      "id": "shannon_limit",
+      "name": "Shannon Source Coding Theorem",
+      "statement": "Lossless compression of data cannot achieve a rate below the entropy of the source",
+      "formal": "∀ data: compression_ratio >= entropy(data)",
+      "z3_encoding": {
+        "variables": ["compression_ratio: Real", "entropy: Real"],
+        "constraints": ["compression_ratio >= entropy"]
+      },
+      "violations": [
+        "beats entropy",
+        "better than entropy",
+        "exceeds entropy limits",
+        "sub-entropy compression",
+        "surpass shannon",
+        "surpassing shannon",
+        "bypass shannon",
+        "bypassing shannon",
+        "exceed shannon",
+        "meta-probabilistic weighting"
+      ]
+    },
+    {
+      "id": "lossless_reversibility",
+      "name": "Lossless Compression Reversibility",
+      "statement": "Lossless compression must be perfectly reversible",
+      "formal": "decompress(compress(data)) == data",
+      "z3_encoding": {
+        "variables": ["original: BitVec", "compressed: BitVec", "recovered: BitVec"],
+        "constraints": ["recovered == original"]
+      },
+      "violations": [
+        "lossy but claims lossless",
+        "approximate decompression"
+      ]
+    },
+    {
+      "id": "information_cannot_be_created",
+      "name": "Information Conservation",
+      "statement": "Information cannot be created from nothing",
+      "formal": "∀ process: output_entropy <= input_entropy + external_information",
+      "z3_encoding": {
+        "variables": ["input_entropy: Real", "output_entropy: Real", "external_info: Real"],
+        "constraints": ["output_entropy <= input_entropy + external_info"]
+      },
+      "violations": [
+        "creates information",
+        "generates data from nothing"
+      ]
+    }
+  ]
+}

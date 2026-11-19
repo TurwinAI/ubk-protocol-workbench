@@ -1,0 +1,56 @@
+{
+  "domain": "relativity",
+  "version": "1.0",
+  "description": "Axioms from Special and General Relativity",
+  "axioms": [
+    {
+      "id": "speed_of_light_limit",
+      "name": "Speed of Light Limit",
+      "statement": "Nothing with mass can travel at or faster than the speed of light",
+      "formal": "∀ object with mass m > 0: velocity < c",
+      "z3_encoding": {
+        "variables": ["velocity: Real", "c: Real"],
+        "constraints": ["velocity < c", "c == 299792458"]
+      },
+      "violations": [
+        "faster than light",
+        "superluminal",
+        "FTL travel",
+        "exceeds light speed",
+        "instantaneous travel",
+        "warp drive that exceeds c"
+      ]
+    },
+    {
+      "id": "causality",
+      "name": "Causality Preservation",
+      "statement": "Effects cannot precede their causes",
+      "formal": "∀ event A causes B: time(A) < time(B)",
+      "z3_encoding": {
+        "variables": ["time_cause: Real", "time_effect: Real"],
+        "constraints": ["time_cause < time_effect"]
+      },
+      "violations": [
+        "effect before cause",
+        "backwards causality",
+        "retrocausality",
+        "change the past"
+      ]
+    },
+    {
+      "id": "time_dilation_limits",
+      "name": "Time Dilation Limits",
+      "statement": "Time can slow but never stop or reverse for massive objects",
+      "formal": "∀ proper_time τ: τ > 0 for massive objects",
+      "z3_encoding": {
+        "variables": ["proper_time: Real"],
+        "constraints": ["proper_time > 0"]
+      },
+      "violations": [
+        "stops time completely",
+        "reverses time",
+        "freezes time"
+      ]
+    }
+  ]
+}

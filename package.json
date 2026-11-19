@@ -1,0 +1,46 @@
+{
+  "name": "ubk-protocol-workbench",
+  "version": "0.1.0",
+  "description": "Universal Bounds Kernel (UBK) + Turwin Formal Verification Kernel with Z3 SMT solving, 12-domain scientific axiom validation, and Protocol-to-AST Execution Workbench.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,ui \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev:api": "tsx watch src/server/index.ts",
+    "dev:ui": "vite",
+    "start": "tsx src/server/index.ts",
+    "build": "vite build",
+    "build:worker": "node scripts/build-worker.mjs",
+    "build:all": "npm run build && npm run build:worker",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "audit:release": "node scripts/audit-release.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^0.7.0",
+    "ajv": "^8.17.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "json-schema": "^0.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "z3-solver": "^4.15.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.2",
+    "vite": "^5.4.21",
+    "vitest": "^3.2.4"
+  }
+}

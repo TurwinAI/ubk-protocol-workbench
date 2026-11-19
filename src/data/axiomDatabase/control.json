@@ -1,0 +1,67 @@
+{
+  "domain": "control",
+  "version": "1.0",
+  "description": "Fundamental control systems bounds",
+  "axioms": [
+    {
+      "id": "stability_lhp",
+      "name": "Closed-Loop Stability",
+      "statement": "Stable linear systems require poles with negative real parts.",
+      "formal": "Re(pole) < 0",
+      "z3_encoding": {
+        "variables": ["pole_real: Real"],
+        "constraints": ["pole_real < 0"]
+      },
+      "violations": [
+        "unstable control",
+        "right-half-plane pole",
+        "positive real part pole"
+      ]
+    },
+    {
+      "id": "latency_bound",
+      "name": "Latency Bound",
+      "statement": "Control loop delay must not exceed maximum allowable latency.",
+      "formal": "delay <= D_max",
+      "z3_encoding": {
+        "variables": ["delay: Real", "D_max: Real"],
+        "constraints": ["delay <= D_max"]
+      },
+      "violations": [
+        "latency above",
+        "delay exceeds",
+        "control delay over"
+      ]
+    },
+    {
+      "id": "overshoot_bound",
+      "name": "Overshoot Bound",
+      "statement": "Step response overshoot must not exceed maximum bound.",
+      "formal": "OS <= OS_max",
+      "z3_encoding": {
+        "variables": ["OS: Real", "OS_max: Real"],
+        "constraints": ["OS <= OS_max"]
+      },
+      "violations": [
+        "overshoot above",
+        "exceed overshoot",
+        "overshoot >"
+      ]
+    },
+    {
+      "id": "actuator_saturation",
+      "name": "Actuator Saturation Limit",
+      "statement": "Control effort must remain within actuator limits.",
+      "formal": "u <= u_max",
+      "z3_encoding": {
+        "variables": ["u: Real", "u_max: Real"],
+        "constraints": ["u <= u_max"]
+      },
+      "violations": [
+        "actuator saturation ignored",
+        "control signal above max",
+        "actuator limit exceed"
+      ]
+    }
+  ]
+}

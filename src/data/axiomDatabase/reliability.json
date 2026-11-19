@@ -1,0 +1,52 @@
+{
+  "domain": "reliability",
+  "version": "1.0",
+  "description": "Reliability and safety engineering bounds",
+  "axioms": [
+    {
+      "id": "mtbf_min",
+      "name": "Minimum MTBF",
+      "statement": "Mean time between failures must exceed minimum requirement.",
+      "formal": "MTBF >= MTBF_min",
+      "z3_encoding": {
+        "variables": ["MTBF: Real", "MTBF_min: Real"],
+        "constraints": ["MTBF >= MTBF_min"]
+      },
+      "violations": [
+        "mtbf below",
+        "mtbf under",
+        "insufficient mtbf"
+      ]
+    },
+    {
+      "id": "failure_rate_max",
+      "name": "Maximum Failure Rate",
+      "statement": "Failure rate must not exceed maximum allowable limit.",
+      "formal": "lambda <= lambda_max",
+      "z3_encoding": {
+        "variables": ["lambda: Real", "lambda_max: Real"],
+        "constraints": ["lambda <= lambda_max"]
+      },
+      "violations": [
+        "failure rate above",
+        "failure rate exceed",
+        "failure rate too high"
+      ]
+    },
+    {
+      "id": "redundancy_required",
+      "name": "Redundancy Requirement",
+      "statement": "Critical systems must not allow single points of failure.",
+      "formal": "redundancy >= 1",
+      "z3_encoding": {
+        "variables": ["redundancy: Int"],
+        "constraints": ["redundancy >= 1"]
+      },
+      "violations": [
+        "no redundancy",
+        "single point of failure allowed",
+        "redundancy below"
+      ]
+    }
+  ]
+}
