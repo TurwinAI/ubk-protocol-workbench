@@ -4,7 +4,7 @@ export interface BenchmarkItem {
   id: string;
   title: string;
   domain: string;
-  expectedStatus: 'PASS' | 'IMPOSSIBLE';
+  expectedStatus: 'PASS' | 'IMPOSSIBLE' | 'UNVERIFIED';
   summary: string;
   objective: string;
   protocolMarkdown: string;
@@ -39,7 +39,7 @@ export interface RunResult {
     domain?: string;
   };
   ubk: {
-    status: 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNKNOWN';
+    status: 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNVERIFIED' | 'UNKNOWN';
     runStatus: string;
     stopReason: string;
     traceLog: string[];
@@ -100,6 +100,13 @@ export interface RunResult {
       description: string;
     }>;
   };
+  dagVerification?: {
+    isAcyclic: boolean;
+    topologicalOrder?: string[];
+    cycles?: string[][];
+    proof: string[];
+    verificationMethod: 'z3-sat' | 'heuristic-fallback';
+  };
   artifacts: Array<{
     id?: string;
     type: string;
@@ -114,5 +121,5 @@ export interface RunResult {
   };
 }
 
-export const GITHUB_REPO_URL = 'https://github.com/realsuperheavy/ubk-protocol-workbench';
+export const GITHUB_REPO_URL = 'https://github.com/TurwinAI/ubk-protocol-workbench';
 export const SITE_URL = 'https://turwinlabs.org';

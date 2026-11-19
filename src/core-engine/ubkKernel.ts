@@ -10,7 +10,7 @@ import {
   type VerifiedArtifact,
 } from './turwinKernel';
 
-export type UBKTerminationStatus = 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNKNOWN';
+export type UBKTerminationStatus = 'PASS' | 'FAIL' | 'IMPOSSIBLE' | 'UNVERIFIED' | 'UNKNOWN';
 export type UBKRunStatus = 'SUCCESS' | 'PARTIAL' | 'EXHAUSTED';
 export type UBKConstraintHardness = 'HARD' | 'SOFT';
 export type UBKConstraintSource = 'DETERMINISTIC' | 'SEMANTIC_FALLBACK';
@@ -320,12 +320,16 @@ function mapTerminationStatus(kernel: {
   status: ExecutionStatus;
   registry: ArtifactRegistry;
   stopReason: StopReason;
+  unknownRegions: UBKUnknownRegion[];
 }): UBKTerminationStatus {
   const hasImpossibilityCert = kernel.registry.artifacts.some((artifact) => artifact.type === 'IMP_CERT');
   if (hasImpossibilityCert) return 'IMPOSSIBLE';
-  if (kernel.status === 'COMPLETE') return 'PASS';
   if (kernel.status === 'ERROR') return 'FAIL';
-  if (kernel.stopReason === 'F_MAX' || kernel.stopReason === 'R_MAX' || kernel.stopReason === 'I_MAX') return 'UNKNOWN';
+  // Epistemic honesty: if objective had unformalized claims (Umap non-empty),
+  // NEVER claim formal PASS — abstain explicitly as UNVERIFIED.
+  if (kernel.unknownRegions.length > 0) return 'UNVERIFIED';
+  if (kernel.status === 'COMPLETE') return 'PASS';
+  if (kernel.stopReason === 'F_MAX' || kernel.stopReason === 'R_MAX' || kernel.stopReason === 'I_MAX') return 'UNVERIFIED';
   return 'UNKNOWN';
 }
 
@@ -403,6 +407,7 @@ export async function executeUniversalBoundsKernel(
       status: kernelResult.status,
       registry: kernelResult.registry,
       stopReason: kernelResult.stopReason,
+      unknownRegions,
     }),
     runStatus: mapKernelRunStatus(kernelResult.status),
     state: {

@@ -373,66 +373,35 @@ export class Z3VerificationService {
   }
 
   /**
-   * Verify termination using bounded model checking
+   * Verify a bounded decreasing loop variant.
+   * Note: This checks arithmetic well-foundedness of declared (initialValue, decrementMin)
+   * parameters only; it does not symbolically execute arbitrary source code loops.
    */
   async verifyTermination(
     loopVariant: string,
     initialValue: number,
     decrementMin: number = 1
   ): Promise<TerminationResult> {
-    await this.initialize();
-    const proof: string[] = ['=== Z3 Termination Verification ==='];
-
-    try {
-      const { Int, Solver, And } = this.z3Context;
-      const solver = new Solver();
-
-      // Model: variant must be non-negative and decrease by at least decrementMin each iteration
-      const variant = Int.const('variant');
-      const variantNext = Int.const('variant_next');
-
-      // Constraints:
-      // 1. variant >= 0 (non-negative)
-      // 2. variant_next = variant - delta where delta >= decrementMin
-      // 3. variant_next >= 0 (stays non-negative until termination)
-      
-      solver.add(And(
-        variant.ge(0),
-        variantNext.lt(variant),
-        variantNext.ge(0)
-      ));
-
-      const result = await solver.check();
-
-      if (result === 'sat') {
-        // Well-founded: terminates in at most ceil(initial / decrementMin) steps
-        const boundEstimate = Math.ceil(initialValue / decrementMin);
-        proof.push(`SAT - Termination proven`);
-        proof.push(`Variant: ${loopVariant}`);
-        proof.push(`Initial value: ${initialValue}`);
-        proof.push(`Minimum decrement: ${decrementMin}`);
-        proof.push(`Upper bound iterations: ${boundEstimate}`);
-
-        return {
-          terminates: true,
-          variant: loopVariant,
-          boundEstimate,
-          proof
-        };
-      } else {
-        proof.push(`UNSAT - Cannot prove termination`);
-        return {
-          terminates: false,
-          proof
-        };
-      }
-    } catch (error) {
-      proof.push(`Error: ${error}`);
-      return {
-        terminates: false,
-        proof
-      };
+    const proof: string[] = ['=== Bounded Variant Arithmetic Check ==='];
+    if (!Number.isFinite(initialValue) || !Number.isFinite(decrementMin)) {
+      proof.push('UNSAT - Non-finite variant parameters');
+      return { terminates: false, proof };
     }
+    if (initialValue < 0 || decrementMin <= 0) {
+      proof.push(
+        `UNSAT - Variant requires initialValue >= 0 (got ${initialValue}) and decrementMin > 0 (got ${decrementMin})`
+      );
+      return { terminates: false, proof };
+    }
+    const boundEstimate = Math.ceil(initialValue / decrementMin);
+    proof.push(`Declared variant "${loopVariant}": initial=${initialValue}, decrementMin=${decrementMin}`);
+    proof.push(`Arithmetic upper bound: at most ${boundEstimate} steps if every iteration decreases variant by >= ${decrementMin}.`);
+    return {
+      terminates: true,
+      variant: loopVariant,
+      boundEstimate,
+      proof,
+    };
   }
 
   /**

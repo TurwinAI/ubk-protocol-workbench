@@ -2,7 +2,7 @@ export interface ResearchBenchmark {
   id: string;
   title: string;
   domain: string;
-  expectedStatus: 'PASS' | 'IMPOSSIBLE';
+  expectedStatus: 'PASS' | 'IMPOSSIBLE' | 'UNVERIFIED';
   summary: string;
   objective: string;
   protocolMarkdown: string;
@@ -11,95 +11,112 @@ export interface ResearchBenchmark {
 
 export const RESEARCH_BENCHMARKS: ResearchBenchmark[] = [
   {
-    id: 'inplace-sort-sat',
-    title: 'In-Place O(1) Auxiliary Space Sorting',
-    domain: 'Complexity Theory (Z3 SAT)',
+    id: 'carnot-feasible-sat',
+    title: 'Carnot Heat Engine (40% at 600 K / 300 K)',
+    domain: 'Thermodynamics (QF_LRA SAT)',
     expectedStatus: 'PASS',
-    summary: 'Feasible algorithmic objective verified by Z3 WASM as SAT with a Unique-Correct bounded certificate.',
-    objective: 'Sort an array without any auxiliary space',
+    summary:
+      'Feasible thermal cycle below the 50% Carnot ceiling. Z3 evaluates eta_claimed <= 1 - T_cold/T_hot as SAT and mints a Bounded-Verified certificate.',
+    objective:
+      'Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 40% thermal efficiency',
     protocolMarkdown: `# Title
-In-Place Heapsort Verification Protocol
+Reversible Heat Engine Specification (40% Target)
 
 ## Goal
-Sort an array without any auxiliary space while preserving O(n log n) worst-case comparison complexity.
-
-## Principles
-- Maintain the max-heap invariant strictly within the input array buffer.
-- Restrict auxiliary working memory to O(1) scalar index variables.
-
-## Operations
-- Heapify: Convert unsorted array slice into a binary max-heap in place.
-- ExtractMax: Swap root with tail boundary and restore heap property via sift-down.
+Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 40% thermal efficiency.
 
 ## Steps
-1. Formalize memory and comparison complexity constraints for sorting an array without any auxiliary space.
-2. Construct the in-place heapsort algorithm using constant O(1) auxiliary space.
-3. Verify constraint consistency via Z3 SMT solver and synthesize the verification report.
-
-## Final Output
-Verified in-place sorting protocol with bounded correctness certificate.`,
+1. Encode reservoir temperatures T_hot = 600 K, T_cold = 300 K, and target eta_claimed = 0.40 in QF_LRA.
+2. Solve the Carnot bound eta_claimed <= 1 - T_cold / T_hot in Z3.
+3. Verify protocol DAG acyclicity and emit a bounded verification certificate.`,
     replayCandidateOutput:
-      'To sort an array without any auxiliary space, build a binary max-heap in place using constant O(1) auxiliary space (only scalar indices i, parent, left, right). Step 1: Heapify from index floor(n/2)-1 down to 0. Step 2: Repeatedly swap root element 0 with the end of the unsorted suffix and sift down to restore the max-heap invariant in O(n log n) worst-case comparisons and O(1) auxiliary space.',
+      'Step 1: Set hot reservoir T_hot = 600 K and cold reservoir T_cold = 300 K (Carnot upper bound = 50.0%). Step 2: Operate a regenerative Brayton cycle targeting 40% net thermal efficiency, maintaining a 10% margin below the reversible Carnot ceiling.',
   },
   {
-    id: 'linear-comparison-sort-unsat',
-    title: 'O(n) Comparison-Based Sorting Impossibility',
-    domain: 'Complexity Theory (Lower Bound)',
+    id: 'carnot-infeasible-unsat',
+    title: 'Carnot Heat Engine (65% at 600 K / 300 K)',
+    domain: 'Thermodynamics (QF_LRA UNSAT)',
     expectedStatus: 'IMPOSSIBLE',
-    summary: 'Provably impossible claim violating the Ω(n log n) decision-tree lower bound; mints an Impossibility Certificate (ImpCert).',
-    objective: 'Design an O(n) comparison-based sorting algorithm for arbitrary comparable elements',
+    summary:
+      'Counterfactual pair with identical wording to Case 01, changing only 40% to 65%. Z3 proves 0.65 <= 0.50 is UNSAT without keyword heuristics.',
+    objective:
+      'Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 65% thermal efficiency',
     protocolMarkdown: `# Title
-Linear-Time Comparison Sort Feasibility Study
+Reversible Heat Engine Specification (65% Target)
 
 ## Goal
-Design an O(n) comparison-based sorting algorithm for arbitrary comparable elements.
+Design a reversible heat engine between a 600 K hot reservoir and a 300 K cold reservoir achieving 65% thermal efficiency.
 
 ## Steps
-1. Encode the comparison-based sorting decision-tree lower bound into SMT-LIB2.
-2. Attempt to construct a comparison-only sorting procedure running in O(n) worst-case time.
-3. Evaluate satisfiability and emit an Impossibility Certificate if refuted.`,
+1. Encode reservoir temperatures T_hot = 600 K, T_cold = 300 K, and target eta_claimed = 0.65 in QF_LRA.
+2. Check satisfiability against the Second Law Carnot bound in Z3.
+3. Emit a Refuted certificate and impossibility witness if UNSAT.`,
     replayCandidateOutput:
-      'Step 1: Compare adjacent elements in a single linear O(n) comparison-based sort pass to sort arbitrary inputs in O(n) worst-case comparisons.',
+      'Step 1: Couple a 600 K hot source to a 300 K cold sink and claim 65% closed-cycle thermal efficiency without auxiliary work input.',
   },
   {
-    id: 'perpetual-motion-carnot',
-    title: 'Over-Unity Heat Engine (>100% Efficiency)',
-    domain: 'Thermodynamics (2nd Law Axiom)',
+    id: 'nyquist-undersampling-unsat',
+    title: 'Nyquist Undersampling (20 kHz Signal at 30 kHz)',
+    domain: 'Signal Processing (QF_LRA UNSAT)',
     expectedStatus: 'IMPOSSIBLE',
-    summary: 'Violates conservation of energy and Carnot efficiency bounds in the 12-domain scientific axiom database.',
-    objective: 'Build a closed-cycle perpetual motion thermal engine with 150% energy efficiency',
+    summary:
+      'Quantitative sampling rate violation (30 kHz < 40 kHz Nyquist minimum). Edit 30 kHz to 48 kHz in the input box to watch Z3 flip from UNSAT to SAT.',
+    objective:
+      'Reconstruct a bandlimited 20 kHz analog signal without aliasing using a 30 kHz uniform sampling rate',
     protocolMarkdown: `# Title
-Over-Unity Thermal Cycle Audit
+Uniform Sampling Reconstruction Check
 
 ## Goal
-Build a closed-cycle perpetual motion thermal engine with 150% energy efficiency.
+Reconstruct a bandlimited 20 kHz analog signal without aliasing using a 30 kHz uniform sampling rate.
 
 ## Steps
-1. Formalize thermodynamic efficiency bounds against the axiom database.
-2. Propose a closed-loop heat engine exceeding Carnot efficiency.
-3. Verify conservation laws and record any impossibility witnesses.`,
+1. Encode signal bandwidth f_max = 20000 Hz and sampling rate f_s = 30000 Hz into QF_LRA.
+2. Evaluate Nyquist criterion f_s >= 2 * f_max in Z3.
+3. Return SAT model or UNSAT impossibility witness.`,
     replayCandidateOutput:
-      'Step 1: Build a perpetual motion machine operating in a closed thermal cycle that extracts ambient heat and outputs 150% efficiency without any external work input, violating the second law of thermodynamics.',
+      'Step 1: Digitize a 20 kHz bandlimited analog signal uniformly at 30 kHz and attempt exact sinc reconstruction without aliasing.',
   },
   {
     id: 'quantum-no-cloning',
     title: 'Unknown Quantum State Cloning Violation',
-    domain: 'Quantum Mechanics (Resource-Flow Logic)',
+    domain: 'Quantum Mechanics (Linear Resource-Flow)',
     expectedStatus: 'IMPOSSIBLE',
-    summary: 'Detected by the kernel resource-flow logic parser when a step duplicates an unknown quantum state |ψ⟩ into |ψ⟩ ⊗ |ψ⟩.',
-    objective: 'Clone an unknown quantum state |ψ⟩ into two exact copies',
+    summary:
+      'Caught by the linear resource-flow checker when a unitary step increases unknown state |psi> multiplicity from 1 input copy to 2 output copies.',
+    objective: 'Clone an unknown quantum state |psi> into |psi> ⊗ |psi> using unitary gates',
     protocolMarkdown: `# Title
 Quantum State Duplication Protocol
 
 ## Goal
-Clone an unknown quantum state |ψ⟩ into two exact copies using unitary gates.
+Clone an unknown quantum state |psi> into |psi> ⊗ |psi> using unitary gates.
 
 ## Steps
-1. Input: |ψ⟩
-2. Apply unitary copier to output |ψ⟩ ⊗ |ψ⟩
-3. Audit resource conservation against the Quantum No-Cloning Theorem.`,
+1. Input: |psi>
+2. Output: |psi> ⊗ |psi>
+3. Audit linear resource conservation against the Quantum No-Cloning Theorem.`,
     replayCandidateOutput:
-      'Step 1:\nInput: |ψ⟩\nOutput: |ψ⟩ ⊗ |ψ⟩\nClone an unknown quantum state |ψ⟩ into two identical independent copies via unitary evolution.',
+      'Step 1:\nInput: |psi>\nOutput: |psi> ⊗ |psi>\nApply a unitary transformation mapping unknown state |psi> to two exact copies |psi> ⊗ |psi>.',
+  },
+  {
+    id: 'unformalized-prose-abstain',
+    title: 'Unformalized Governance Policy (Honest Abstention)',
+    domain: 'Epistemic Abstention (Umap)',
+    expectedStatus: 'UNVERIFIED',
+    summary:
+      'Prose objective with no extractable SMT or structural model. The kernel refuses to fabricate a PASS verdict and returns UNVERIFIED with Umap populated.',
+    objective: 'Propose an organizational governance policy for open-weight model release',
+    protocolMarkdown: `# Title
+Open-Weight Model Release Governance Draft
+
+## Goal
+Propose an organizational governance policy for open-weight model release.
+
+## Steps
+1. Outline release review roles and escalation criteria.
+2. Draft pre-release safety documentation requirements.
+3. Record unformalized claims explicitly in Umap.`,
+    replayCandidateOutput:
+      'Step 1: Establish an internal review board for open-weight model release with written risk sign-off and incident disclosure windows.',
   },
 ];
 

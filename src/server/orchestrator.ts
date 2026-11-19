@@ -3,6 +3,7 @@ import { constraintEncoder } from '../core-engine/constraintEncoder';
 import { SMTVerifier, type SMTResult } from '../core-engine/smtVerifier';
 import { validateScientificClaim, type ValidationResult } from '../core-engine/scientificValidationService';
 import { executeUniversalBoundsKernel, type UBKExecutionResult } from '../core-engine/ubkKernel';
+import { getZ3VerificationService, type DAGVerificationResult } from '../core-engine/z3VerificationService';
 import { getModelConfigSync, setRuntimeGeminiApiKey } from '../config/modelConfig';
 import { planCompositeDocAstWithGemini } from '../core/execution/astPlanner';
 import { buildExecutionPlanFromAst, buildExecutionPlanFromRecipeText, type ExecutionPlan } from '../core/execution/planBuilder';
@@ -35,6 +36,7 @@ export interface ProtocolRunResponse {
   scientificValidation: ValidationResult;
   ubk: UBKExecutionResult;
   plan: ExecutionPlan;
+  dagVerification: DAGVerificationResult;
   artifacts: Artifact[];
   verificationPacket: VerificationPublicPacket;
   timingMs: {
@@ -319,6 +321,21 @@ export async function runProtocolWorkbench(req: ProtocolRunRequest): Promise<Pro
     }
   }
 
+  // 4b. Real Z3 SAT DAG Acyclicity Verification over compiled CompositeDocAst nodes
+  const dagSteps = plan.nodes.map((node, idx) => ({
+    id: node.id,
+    dependencies:
+      Array.isArray((node as { dependencies?: string[] }).dependencies) &&
+      ((node as { dependencies?: string[] }).dependencies?.length ?? 0) > 0
+        ? (node as { dependencies?: string[] }).dependencies!
+        : idx > 0
+          ? [plan.nodes[idx - 1].id]
+          : [],
+    inputs: [],
+    outputs: [node.outputType || 'report'],
+  }));
+  const dagVerification = await getZ3VerificationService().verifyAcyclicDAG(dagSteps);
+
   // Append canonical Verification Summary report artifact
   const summaryReport: Artifact = {
     id: `art_verification_summary_${runId}`,
@@ -380,6 +397,7 @@ export async function runProtocolWorkbench(req: ProtocolRunRequest): Promise<Pro
     scientificValidation,
     ubk,
     plan,
+    dagVerification,
     artifacts,
     verificationPacket,
     timingMs: {

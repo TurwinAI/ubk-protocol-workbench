@@ -8,46 +8,47 @@ interface ResearchPageProps {
 export const ResearchPage: React.FC<ResearchPageProps> = ({ onNavigate }) => {
   return (
     <main className="container-narrow prose" data-testid="research-page">
-      <div className="eyebrow">Research Note · Turwin Labs</div>
-      <h1>Bounded Formal Verification for Generative Reasoning</h1>
-      <p className="lead">
-        Where the Universal Bounds Kernel came from, why probabilistic self-evaluation collapses at
-        impossibility boundaries, and the open research agenda we are releasing to the community.
-      </p>
+      <div className="section-code">TECHNICAL NOTE · TURWIN LABS · NOVEMBER 2026</div>
+      <h1>Bounded Formal Verification and Epistemic Abstention for Generative Systems</h1>
 
-      <div className="callout">
-        <strong>Core Thesis:</strong> Treat the language model strictly as an <em>untrusted proposal
-        generator</em>. Place every generated algorithm, scientific claim, or execution plan behind a
-        bounded, deterministic verification kernel that can mint verifiable certificates of validity
-        (<code>Unique-Correct</code>), explicit impossibility (<code>ImpCert</code>), or honest
-        incompleteness (<code>Unresolved-Within-Bounds</code> + <code>Umap</code>).
+      <div className="abstract">
+        <strong>Abstract.</strong> Language models write plans and code fast, yet they often break
+        physical laws and known mathematical limits. This note presents the Universal Bounds Kernel
+        (UBK) and its protocol graph engine. The system checks numeric claims with Z3 SMT solving,
+        verifies graph order without cycles, and refuses to fake a pass when prose lacks a formal
+        model. Every run halts inside fixed step and failure caps, writing a signed certificate, a
+        disproof witness, or an explicit unknown map called <code>U<sub>map</sub></code>.
       </div>
 
-      <h2>1. Where This Idea Came From</h2>
+      <h2>1. Background and 2023 to 2026 Literature</h2>
       <p>
-        This project began as an engineering problem while building multi-step AI protocol generators—systems
-        that turn open-ended research or engineering objectives into structured step-by-step plans and
-        executable artifacts. Early prototypes relied on standard &ldquo;LLM-as-a-Judge&rdquo; loops:
-        one model proposed a design, and another model graded its quality.
+        Early neuro-symbolic frameworks showed that pairing language models with formal solvers
+        cuts reasoning errors. Logic-LM (Pan et al., 2023), SatLM (Ye et al., 2023), and LINC
+        (Olausson et al., 2023) used language models as semantic parsers that translate prose into
+        first-order logic or SAT constraints checked by Z3 or Prover9.
       </p>
       <p>
-        That pattern broke down systematically on hard constraints. When prompted with physically or
-        mathematically impossible goals—such as designing an <code>O(n)</code> comparison-based sorting
-        algorithm, building a closed-cycle heat engine above Carnot efficiency, or cloning an unknown
-        quantum state <code>|ψ⟩</code>—a generative model will often write fluent, authoritative prose
-        claiming success, and a probabilistic judge frequently agrees.
+        Work in 2026 exposed deeper failure modes in that pipeline. A NeurIPS 2026 study on
+        common-mode failure (Three Agents Are Not Three Verifiers) showed that multi-agent model
+        voting fails on shared errors and still needs non-model proof gates. NSVIF (Su et al., Jan
+        2026) framed instruction following as constraint solving inside Z3. SOVER (Bhattacharyya
+        and Baranwal, Sep 2026) kept language models restricted to mapping while leaving
+        certification strictly to Z3 and dReal. SHADOWBENCH (Aug 2026) showed that type checks
+        alone miss semantic drift under small numeric edits, such as changing one constant inside
+        an otherwise identical claim.
       </p>
       <p>
-        Rather than trying to prompt-engineer away sycophancy, we moved the source of truth <em>outside</em>{' '}
-        the language model: into formal SMT solving (Z3), domain axiom tables, deterministic resource-flow
-        parsing, and hard compute/iteration bounds.
+        Our prototype builds directly on those 2026 findings. We removed internal model self-judging
+        from the trusted checking base and added strict epistemic abstention. When a claim cannot be
+        encoded into an actual arithmetic or structural model, the kernel logs it in{' '}
+        <code>U<sub>map</sub></code> and outputs <code>UNVERIFIED</code> rather than a false pass.
       </p>
 
-      <h2>2. The Universal Bounds Kernel (UBK)</h2>
+      <h2>2. State Vector and Epistemic Evidence Tiers</h2>
       <p>
-        Instead of open-ended agent loops that burn tokens until a heuristic score looks high, the
-        Universal Bounds Kernel models verification as a strictly bounded state transition over five
-        explicit components:
+        Open agent loops can burn compute without proving a task can be solved. The Universal Bounds
+        Kernel restricts execution to fixed step, branch, and failure limits and tracks a five-part
+        state across every run:
       </p>
 
       <div className="formula-box">
@@ -56,129 +57,159 @@ export const ResearchPage: React.FC<ResearchPageProps> = ({ onNavigate }) => {
 
       <ul>
         <li>
-          <strong>Constraint Intermediate Representation (<code>C<sub>ir</sub></code>):</strong>{' '}
-          Natural-language objectives are encoded into explicit domain constraints and SMT-LIB2 formulas
-          with recorded confidence and source provenance.
+          <strong>Constraint list (<code>C<sub>ir</sub></code>):</strong> Quantitative claims parse
+          into executable QF_LRA or QF_LIA SMT-LIB2 formulas asserting both the domain law and the
+          candidate numbers.
         </li>
         <li>
-          <strong>Provenance Log (<code>P<sub>log</sub></code>):</strong> Append-only cryptographic commit
-          history linking every transition hash to its canonical state block (<code>CSB</code>).
+          <strong>Commit log (<code>P<sub>log</sub></code>):</strong> Each accepted step appends a
+          deterministic state hash (FNV-1a for loop checks; SHA-256 on the final certificate over
+          canonical fields excluding wall-clock time).
         </li>
         <li>
-          <strong>Verified Artifact Registry (<code>R<sub>reg</sub></code>):</strong> Only candidates
-          surviving all invariant gates are admitted; rejected candidates produce structured{' '}
-          <code>ImpCert</code> exclusion boundaries or <code>Witness</code> counterexamples so the kernel
-          cannot loop on previously refuted regions.
+          <strong>Candidate registry (<code>R<sub>reg</sub></code>):</strong> Accepted candidates
+          and impossibility certificates (<code>ImpCert</code>) enter a bounded registry capped by{' '}
+          <code>R_max</code>.
         </li>
         <li>
-          <strong>Resource Budget (<code>B<sub>rem</sub></code>):</strong> Explicit ceilings on wall-clock
-          time, iterations (<code>I_max</code>), explored paths (<code>R_max</code>), and consecutive
-          failures (<code>F_max</code>).
+          <strong>Remaining budget (<code>B<sub>rem</sub></code>):</strong> Hard caps bound wall
+          clock time, iteration count (<code>I_max</code>), branch count (<code>R_max</code>), and
+          consecutive failures (<code>F_max</code>).
         </li>
         <li>
-          <strong>Unknown Region Map (<code>U<sub>map</sub></code>):</strong> Crucial for intellectual
-          honesty. Whenever a claim cannot be formalized into SMT-LIB2, depends on semantic fallback, or
-          runs in an environment without full Z3 WASM, the kernel records an explicit unknown region rather
-          than pretending the check was mathematically sound.
+          <strong>Unknown region map (<code>U<sub>map</sub></code>):</strong> Prose objectives or
+          unparsed formulas enter <code>U<sub>map</sub></code>. A non-empty map forces the verdict to{' '}
+          <code>UNVERIFIED</code>.
         </li>
       </ul>
 
-      <h2>3. Layered Verification &amp; Soundness Discipline</h2>
       <p>
-        Inside the Turwin v4.0-FS Kernel, every candidate proposal passes through five structural
-        invariants—<strong>Provenance (<code>Prov</code>)</strong>, <strong>Type Conformance
-        (<code>TypeOK</code>)</strong>, <strong>Well-Formed AST (<code>ASTOK</code>)</strong>,{' '}
-        <strong>Goal Coverage (<code>GoalOK</code>)</strong>, and <strong>Cycle Freedom
-        (<code>CycleFree</code>)</strong>—followed by three domain-truth gates:
+        Every check reports one of four explicit evidence grades so a reader never confuses a
+        keyword filter with a proof: <code>FORMAL_SMT</code> (solved by Z3 or exact ground
+        arithmetic), <code>STRUCTURAL_CHECK</code> (linear resource conservation or DAG order),{' '}
+        <code>HEURISTIC_PATTERN</code> (curated qualitative axiom match), or <code>UNVERIFIED</code>.
+      </p>
+
+      <h2>3. Quantitative Models and Counterfactual Sensitivity</h2>
+      <p>
+        Prior drafts of this codebase contained SMT theater, such as reflexive tautologies and
+        regexes that handed Z3 hardcoded contradictions. We stripped those out. Each active encoder
+        now binds real numeric parameters from the input and lets the solver decide feasibility:
       </p>
       <ol>
         <li>
-          <strong>Z3 SMT-LIB2 Satisfiability (<code>SMTVerifier</code>):</strong> Checks encoded constraints
-          against Z3 WASM in Node (producing <code>SOUND</code> verdicts for <code>SAT</code>/<code>UNSAT</code>)
-          paired with a fast-path theorem table for classical lower bounds (decision-tree sorting, halting
-          undecidability, Shannon entropy limits).
+          <strong>Carnot thermal bounds (QF_LRA):</strong> Extracts reservoir temperatures and
+          claimed efficiency, asserting both the Carnot ceiling and the claimed rate. Changing 40%
+          to 65% between 600 K and 300 K flips Z3 from <code>SAT</code> to <code>UNSAT</code> on
+          identical phrasing.
         </li>
         <li>
-          <strong>12-Domain Scientific Axiom Database:</strong> Structured JSON axiom and open-conjecture
-          sets spanning complexity theory, thermodynamics, quantum mechanics, relativity, information
-          theory, mathematics, biology, electrical, mechanical, control, materials, and reliability
-          engineering.
+          <strong>Nyquist sampling bounds (QF_LRA):</strong> Parses signal bandwidth and sampling
+          rate in Hz through GHz, solving <code>f_s &gt;= 2 * f_max</code> directly in Z3.
         </li>
         <li>
-          <strong>Resource-Flow Logic Parser:</strong> Parses step-by-step input/output transitions to catch
-          conservation violations that escape keyword matching—for example, duplicating an unknown quantum
-          state <code>|ψ⟩ → |ψ⟩ ⊗ |ψ⟩</code> in violation of the Quantum No-Cloning Theorem.
+          <strong>Discrete capacity and sorting lower bounds (QF_LIA / QF_LRA):</strong> Checks
+          integer allocation bounds and exact Stirling comparison-sort limits instead of naive
+          substring matches.
+        </li>
+        <li>
+          <strong>Linear quantum resource flow and DAG acyclicity:</strong> Parses ket notation
+          across steps to catch unknown-state duplication (No-Cloning), while Z3 checks{' '}
+          <code>order[u] &lt; order[v]</code> across compiled <code>CompositeDocAst</code> graph
+          nodes to prove acyclicity.
         </li>
       </ol>
+
+      <h2>4. Threat Model and Explicit Non-Claims</h2>
       <p>
-        Every run terminates with a deterministic <strong><code>BoundedCertificate</code></strong> carrying
-        a SHA-256 fingerprint, compute accounting, and one of three mutually exclusive verdicts:{' '}
-        <code>Unique-Correct</code>, <code>Unresolved-Within-Bounds</code>, or <code>Failure</code>.
+        Honest research states what a prototype does not prove. This kernel does not verify
+        arbitrary natural language, does not execute source code symbolically, and does not settle
+        open conjectures such as P vs NP or integer factoring (which are marked{' '}
+        <code>Flagged</code>, never rejected as impossible). Its formal guarantees cover only the
+        encoded arithmetic inequalities, linear state counts, and graph order relations shown in the
+        inspectable trace.
+      </p>
+      <p>
+        On local Node.js, the full Z3 WebAssembly binary solves every SMT-LIB2 file. On the edge web
+        deployment at <code>turwinlabs.org</code>, a compact exact ground-and-affine evaluator
+        decides linear formulas and returns <code>unknown</code> honestly for quantified formulas
+        outside its fragment.
       </p>
 
-      <h2>4. Protocol-to-AST Execution</h2>
-      <p>
-        Formal verification is most useful when it connects directly to structured execution. Alongside the
-        kernel, this release includes the <strong>Protocol-to-CompositeDoc-AST</strong> pipeline: a
-        JSON-Schema-validated (Ajv) planner that compiles research protocols into executable node DAGs,
-        auto-registers safe protocol tools, and packages outputs alongside a machine-readable{' '}
-        <code>VerificationPublicPacket</code>.
-      </p>
-
-      <h2>5. Research Direction &amp; Open Problems</h2>
-      <p>
-        We are releasing this prototype under the MIT License because solving reliable verification for
-        generative AI requires open, inspectable infrastructure—not closed benchmarks. Four research
-        directions stand out immediately:
-      </p>
+      <h2>5. Open Research Direction</h2>
       <ul>
         <li>
-          <strong>Shrinking <code>U<sub>map</sub></code> via Neuro-Symbolic Auto-Formalization:</strong>{' '}
-          Deterministic regex/pattern encoders cover known mathematical and physical bounds cleanly, but
-          most real-world engineering specs still fall into <code>U<sub>map</sub></code>. Building
-          round-trip-verified NL → SMT-LIB2 and NL → Lean 4 translators is the highest-leverage next step.
+          <strong>Semantic alignment under perturbation:</strong> Extend the five starter cases
+          with SHADOWBENCH-style local counterfactual edits to test whether LLM autoformalizers
+          preserve exact constants and quantifiers.
         </li>
         <li>
-          <strong>Compositional Impossibility Algebras (<code>ImpCert</code> Pruning):</strong> Turning
-          local failure witnesses into reusable exclusion constraints that prune entire subtrees of
-          multi-step agent trajectories without re-querying the LLM.
+          <strong>Minimal unsat-core feedback:</strong> Feed Z3 unsat cores back into candidate
+          repair loops so models revise only the conflicting bound.
         </li>
         <li>
-          <strong>Proof-Carrying Execution Artifacts:</strong> Extending the CompositeDoc AST so every
-          generated code, simulation, or report node carries a replayable machine-checkable proof bundle
-          (Z3 unsat cores, Lean proof terms, or deterministic sandbox traces).
-        </li>
-        <li>
-          <strong>Adversarial Impossibility Benchmarks:</strong> Expanding the 4 starter benchmarks in this
-          workbench into a community-maintained suite measuring false-acceptance rates (hallucinated
-          &ldquo;solutions&rdquo; to impossible problems) and false-rejection rates across frontier models.
+          <strong>Proof-carrying protocol nodes:</strong> Attach Lean 4 proof terms or checkable
+          unsat cores to every <code>CompositeDocAst</code> node artifact.
         </li>
       </ul>
 
-      <h2>6. Citing &amp; Reproducing</h2>
+      <h2>6. References and Citation</h2>
+      <ol>
+        <li>
+          Pan, L. et al. (2023). <em>Logic-LM: Empowering Large Language Models with Symbolic
+          Solvers for Faithful Logical Reasoning.</em> arXiv:2305.12295.
+        </li>
+        <li>
+          Ye, X. et al. (2023). <em>SatLM: Satisfiability-Aided Language Models Using Declarative
+          Prompting.</em> arXiv:2305.09656.
+        </li>
+        <li>
+          Olausson, T. et al. (2023). <em>LINC: A Neuro-Symbolic Approach for Logical Reasoning by
+          Combining Large Language Models with First-Order Logic Solvers.</em> arXiv:2310.15164.
+        </li>
+        <li>
+          Su, Y., Xu, K., Gao, Y., Yang, F., Li, C., Yang, M., and Xu, T. (Jan 2026).{' '}
+          <em>Neuro-Symbolic Verification on Instruction Following of LLMs (NSVIF).</em>{' '}
+          arXiv:2601.17789.
+        </li>
+        <li>
+          <em>SHADOWBENCH: Toward Reliable Automatic Evaluation of Semantic Alignment in
+          Autoformalization.</em> (Aug 2026). Lean 4 benchmark and SA-Pass metric.
+        </li>
+        <li>
+          Bhattacharyya, S. and Baranwal, M. (Sep 2026). <em>SOVER: Formal Certification of
+          Optimization Reformulations via LLM-Assisted SMT Verification.</em> arXiv:2609.00728.
+        </li>
+        <li>
+          <em>Three Agents Are Not Three Verifiers: Measuring Common-Mode Failure in LLM
+          Verification.</em> (NeurIPS 2026).
+        </li>
+      </ol>
+
       <p>
-        You can reproduce every claim on this page locally with real Z3 WASM in under two minutes from the{' '}
+        Clone the{' '}
         <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-          open-source MIT repository
-        </a>
-        , or run the benchmarks directly in the browser right now.
+          public MIT repository
+        </a>{' '}
+        to inspect every encoder, test counterfactual pairs locally in Node.js Z3, or run the live
+        instrument in the workbench.
       </p>
 
       <pre className="code-block">{`@software{turwinlabs_ubk_workbench_2026,
   author  = {Thompson, Paul},
-  title   = {UBK Protocol Workbench: Universal Bounds Kernel and Formal Verification Prototype},
+  title   = {UBK Protocol Workbench: Bounded Formal Verification and Epistemic Abstention Prototype},
   year    = {2026},
   license = {MIT},
   url     = {${SITE_URL}},
   note    = {Source code: ${GITHUB_REPO_URL}}
 }`}</pre>
 
-      <div className="cta-row" style={{ marginTop: 28 }}>
+      <div className="cta-row" style={{ marginTop: 24 }}>
         <button type="button" className="btn-primary" onClick={() => onNavigate('/workbench')}>
-          Test These Proofs in the Workbench →
+          Open Workbench
         </button>
-        <button type="button" className="btn-secondary" onClick={() => onNavigate('/open-source')}>
-          Read the Plain-English Repo Guide
+        <button type="button" className="link-action" onClick={() => onNavigate('/open-source')}>
+          Read Repository Guide
         </button>
       </div>
     </main>

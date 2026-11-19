@@ -21,6 +21,8 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
   const [protocolMarkdown, setProtocolMarkdown] = useState<string>('');
   const [mode, setMode] = useState<'replay' | 'live'>('replay');
   const [apiKey, setApiKey] = useState<string>('');
+  const [maxIterations, setMaxIterations] = useState<number>(3);
+  const [smtTimeoutMs, setSmtTimeoutMs] = useState<number>(2500);
   const [running, setRunning] = useState<boolean>(false);
   const [error, setError] = useState<{ code?: string; message: string } | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -32,6 +34,8 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
     runMode: 'replay' | 'live';
     benchId?: string;
     key?: string;
+    iterations?: number;
+    timeout?: number;
   }) => {
     if (!params.obj.trim()) return;
     setRunning(true);
@@ -47,6 +51,8 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
           protocolMarkdown: params.proto,
           mode: params.runMode,
           benchmarkId: params.benchId || undefined,
+          maxIterations: params.iterations ?? maxIterations,
+          smtTimeoutMs: params.timeout ?? smtTimeoutMs,
           ...(params.runMode === 'live' && params.key?.trim() ? { apiKey: params.key.trim() } : {}),
         }),
       });
@@ -115,6 +121,8 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
       runMode: mode,
       benchId: selectedBenchmarkId || undefined,
       key: apiKey,
+      iterations: maxIterations,
+      timeout: smtTimeoutMs,
     });
   };
 
@@ -130,59 +138,27 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
   };
 
   return (
-    <main className="container">
-      <div className="wb-header">
-        <div>
-          <h1 className="section-title" style={{ fontSize: '2rem' }}>
-            Verification &amp; Protocol Workbench
-          </h1>
-          <p className="section-sub">
-            Run deterministic formal proofs against the Universal Bounds Kernel, inspect SMT-LIB2
-            encodings, or test live synthesis with your own Gemini API key.
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <span className={`pill ${health?.ok ? 'ok' : ''}`} data-testid="health-status">
+    <main className="wb-shell">
+      <div className="wb-toolbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 500, fontSize: '0.96rem', letterSpacing: '-0.01em' }}>
+            UBK Verification Workbench
+          </span>
+          <span
+            className="status-inline"
+            style={{ display: 'inline-flex', color: 'var(--text-secondary)' }}
+            data-testid="health-status"
+          >
+            <span className={`dot ${health?.ok ? 'ok' : ''}`} />
             {health?.ok ? 'API: ONLINE' : 'API: CONNECTING'}
           </span>
-          <span className={`pill ${health?.z3Enabled ? 'ok' : ''}`}>
-            {health?.runtime === 'node'
-              ? 'SOLVER: Z3 WASM (NODE)'
-              : 'SOLVER: EDGE SMT + AXIOM KERNEL'}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
+            {health?.runtime === 'node' ? 'Z3 WASM (NODE.JS)' : 'EDGE SMT + 12 AXIOM DOMAINS'}
           </span>
         </div>
-      </div>
 
-      {error && (
-        <div className="error-banner" role="alert" data-testid="error-banner">
-          <strong>{error.code || 'ERROR'}:</strong> {error.message}
-        </div>
-      )}
-
-      <div className="wb-grid">
-        <section className="card">
-          <h3 style={{ marginBottom: 12 }}>1. Curated Research Benchmarks</h3>
-
-          <div className="benchmark-list">
-            {benchmarks.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`benchmark-${item.id}`}
-                className={`benchmark-btn ${selectedBenchmarkId === item.id ? 'active' : ''}`}
-                onClick={() => selectBenchmark(item)}
-              >
-                <div className="benchmark-top">
-                  <span>{item.title}</span>
-                  <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
-                </div>
-                <div className="benchmark-meta">{item.domain}</div>
-              </button>
-            ))}
-          </div>
-
-          <div className="label-caps">2. Execution Mode</div>
-          <div className="mode-row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div className="mode-group" role="group" aria-label="Execution mode">
             <button
               type="button"
               data-testid="mode-replay"
@@ -192,7 +168,7 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                 setError(null);
               }}
             >
-              Replay (Zero-Key + Formal)
+              Replay
             </button>
             <button
               type="button"
@@ -203,262 +179,355 @@ export const WorkbenchPage: React.FC<WorkbenchPageProps> = ({
                 setError(null);
               }}
             >
-              Live BYOK (Gemini)
+              Live BYOK
             </button>
           </div>
-
-          {mode === 'live' && (
-            <div className="field">
-              <label htmlFor="apiKeyInput">
-                Gemini API Key (sent only for this request; never stored)
-              </label>
-              <input
-                id="apiKeyInput"
-                data-testid="api-key-input"
-                type="password"
-                placeholder="Enter GEMINI_API_KEY or leave blank to verify fail-loudly behavior"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="field">
-            <label htmlFor="objectiveInput">Research Objective / Claim</label>
-            <input
-              id="objectiveInput"
-              data-testid="objective-input"
-              type="text"
-              value={objective}
-              onChange={(e) => setObjective(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="protocolInput">Structured Protocol (Markdown)</label>
-            <textarea
-              id="protocolInput"
-              data-testid="protocol-input"
-              rows={8}
-              value={protocolMarkdown}
-              onChange={(e) => setProtocolMarkdown(e.target.value)}
-            />
-          </div>
-
           <button
             type="button"
-            className="run-btn"
+            className="btn-primary btn-primary-sm"
             data-testid="run-button"
             disabled={running || !objective.trim()}
             onClick={handleRun}
           >
-            {running ? 'Running Formal Verification...' : 'Run Formal Verification & Protocol'}
+            {running ? 'Running Kernel...' : 'Run Verification'}
           </button>
-        </section>
+        </div>
+      </div>
 
-        <section className="card">
-          {!result ? (
-            <div style={{ textAlign: 'center', padding: '56px 20px', color: 'var(--muted)' }} data-testid="empty-state">
-              <p style={{ fontSize: '0.98rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                Select any benchmark on the left or write your own claim, then click{' '}
-                <strong>Run Formal Verification &amp; Protocol</strong>.
-              </p>
-              <p style={{ fontSize: '0.86rem' }}>
-                Every run produces a cryptographically fingerprinted <code>BoundedCertificate</code>,
-                formal SMT-LIB2 constraints, a CompositeDoc AST execution plan, and a step-by-step
-                kernel trace.
-              </p>
-            </div>
-          ) : (
-            <div data-testid="result-panel">
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingBottom: 14,
-                  borderBottom: '1px solid var(--border)',
-                  marginBottom: 14,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span className={`badge ${result.ubk.status}`} data-testid="verdict-badge">
-                    {result.ubk.status}
-                  </span>
-                  <span className="pill" data-testid="certificate-type">
-                    {result.ubk.certificate.certificate_type}
-                  </span>
-                  <span className="pill">
-                    {result.mode.toUpperCase()} · {result.timingMs.total}ms
-                  </span>
-                </div>
-                <button type="button" className="icon-btn" onClick={exportJson}>
-                  Export JSON Packet
-                </button>
-              </div>
+      {error && (
+        <div className="error-banner" role="alert" data-testid="error-banner">
+          <strong>{error.code || 'ERROR'}:</strong> {error.message}
+        </div>
+      )}
 
-              <div className="tabs">
+      <div className="wb-layout">
+        <aside className="wb-rail">
+          <div className="rail-section">
+            <div className="rail-heading">Reference Cases</div>
+            <div className="benchmark-list">
+              {benchmarks.map((item) => (
                 <button
+                  key={item.id}
                   type="button"
-                  className={`tab-btn ${activeTab === 'verdict' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('verdict')}
+                  data-testid={`benchmark-${item.id}`}
+                  className={`benchmark-btn ${selectedBenchmarkId === item.id ? 'active' : ''}`}
+                  onClick={() => selectBenchmark(item)}
                 >
-                  Verdict &amp; Certificate
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'constraints' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('constraints')}
-                >
-                  Constraint IR ({result.ubk.state.Cir.constraints.length})
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'dag' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('dag')}
-                >
-                  AST Plan &amp; Artifacts ({result.artifacts.length})
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'trace' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('trace')}
-                >
-                  Kernel Trace ({result.ubk.traceLog.length})
-                </button>
-              </div>
-
-              {activeTab === 'verdict' && (
-                <div>
-                  <div className="kv-grid">
-                    <div className="kv">
-                      <div className="kv-label">SMT Verdict</div>
-                      <div className="kv-val" data-testid="smt-verdict">
-                        {result.smtResult.verdict} ({result.smtResult.soundness})
-                      </div>
-                    </div>
-                    <div className="kv">
-                      <div className="kv-label">Axiom Classification</div>
-                      <div className="kv-val">{result.scientificValidation.classification}</div>
-                    </div>
-                    <div className="kv">
-                      <div className="kv-label">Stop Reason</div>
-                      <div className="kv-val">{result.ubk.stopReason}</div>
-                    </div>
-                    <div className="kv">
-                      <div className="kv-label">Certificate Fingerprint</div>
-                      <div className="kv-val">{result.ubk.certificate.fingerprint.slice(0, 16)}...</div>
-                    </div>
+                  <div className="benchmark-top">
+                    <span>{item.title}</span>
+                    <span className={`badge ${item.expectedStatus}`}>{item.expectedStatus}</span>
                   </div>
+                  <div className="benchmark-meta">{item.domain}</div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-                  <div className="label-caps">SMT Proof / Solver Evaluation</div>
-                  <pre className="code-block" data-testid="smt-proof">
-                    {result.smtResult.proof || 'No proof trace emitted.'}
-                  </pre>
+          <div className="rail-section">
+            <div className="rail-heading">Kernel Resource Bounds</div>
+            <div className="slider-row">
+              <div className="slider-label">
+                <span>Max Iterations (I_max)</span>
+                <span>{maxIterations}</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={8}
+                step={1}
+                aria-label="Max iterations"
+                value={maxIterations}
+                onChange={(e) => setMaxIterations(Number(e.target.value))}
+              />
+            </div>
+            <div className="slider-row">
+              <div className="slider-label">
+                <span>SMT Timeout</span>
+                <span>{smtTimeoutMs} ms</span>
+              </div>
+              <input
+                type="range"
+                min={500}
+                max={5000}
+                step={250}
+                aria-label="SMT timeout milliseconds"
+                value={smtTimeoutMs}
+                onChange={(e) => setSmtTimeoutMs(Number(e.target.value))}
+              />
+            </div>
+          </div>
 
-                  <div className="label-caps">12-Domain Scientific Axiom Validation</div>
-                  <pre className="code-block">
-                    {result.scientificValidation.reasoning_summary}
-                  </pre>
-
-                  {result.ubk.artifactBundle.impossibilityCertificates.length > 0 && (
-                    <>
-                      <div className="label-caps">Impossibility Certificates (ImpCert)</div>
-                      {result.ubk.artifactBundle.impossibilityCertificates.map((cert, i) => (
-                        <div className="artifact-card" key={i} data-testid="imp-cert-card">
-                          <div><strong>Reason:</strong> {cert.reason}</div>
-                          <div><strong>Boundary:</strong> <code>{cert.boundary}</code></div>
-                          <div><strong>Logic:</strong> <code>{cert.logic}</code></div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-
-                  {result.ubk.artifactBundle.witnesses.length > 0 && (
-                    <>
-                      <div className="label-caps">Counterexample Witnesses</div>
-                      {result.ubk.artifactBundle.witnesses.map((w, i) => (
-                        <div className="artifact-card" key={i}>
-                          <div><strong>Constraint:</strong> <code>{w.constraintViolated}</code></div>
-                          <div>{w.counterExample}</div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'constraints' && (
-                <div>
-                  {result.ubk.state.Cir.constraints.length === 0 ? (
-                    <p style={{ color: 'var(--muted)' }}>
-                      No formalizable SMT constraints extracted for this objective; check Umap below.
-                    </p>
-                  ) : (
-                    result.ubk.state.Cir.constraints.map((c) => (
-                      <div className="artifact-card" key={c.id}>
-                        <div>
-                          <strong>{c.id}</strong> · <span>{c.domain}</span> · confidence{' '}
-                          {c.confidence.toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '0.86rem', marginTop: 4 }}>{c.expression}</div>
-                        {c.smtlib && <pre className="code-block">{c.smtlib.trim()}</pre>}
-                      </div>
-                    ))
-                  )}
-
-                  {result.ubk.state.Umap.length > 0 && (
-                    <>
-                      <div className="label-caps">Explicit Unknown Regions (Umap)</div>
-                      {result.ubk.state.Umap.map((u, i) => (
-                        <div className="artifact-card" key={i}>
-                          <strong>{u.code}</strong>: {u.reason}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'dag' && (
-                <div>
-                  <div className="label-caps">Planned Execution DAG ({result.plan.nodes.length} nodes)</div>
-                  {result.plan.nodes.map((node) => (
-                    <div className="artifact-card" key={node.id}>
-                      <div>
-                        <strong>{node.id}</strong> — {node.name}{' '}
-                        <span className="pill">{node.modality}</span>
-                      </div>
-                      <div style={{ fontSize: '0.84rem', color: 'var(--muted)', marginTop: 4 }}>
-                        {node.description}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="label-caps">Generated Artifacts</div>
-                  {result.artifacts.map((art, i) => (
-                    <div className="artifact-card" key={art.id || i}>
-                      <div>
-                        <strong>{art.title || art.id || `Artifact ${i + 1}`}</strong>{' '}
-                        <span className="pill">{art.type}</span>
-                      </div>
-                      <pre className="code-block">{art.content}</pre>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === 'trace' && (
-                <div>
-                  <div className="label-caps">Turwin v4.0-FS Kernel Trace</div>
-                  <pre className="code-block">{result.ubk.traceLog.join('\n')}</pre>
-                </div>
-              )}
+          {mode === 'live' && (
+            <div className="rail-section">
+              <div className="rail-heading">Live BYOK Key</div>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label htmlFor="apiKeyInput">Gemini API Key (per request)</label>
+                <input
+                  id="apiKeyInput"
+                  data-testid="api-key-input"
+                  type="password"
+                  placeholder="Optional if set in server .env"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              </div>
             </div>
           )}
-        </section>
+        </aside>
+
+        <div className="wb-main">
+          <section className="wb-editor-band">
+            <div className="field">
+              <label htmlFor="objectiveInput">Objective / Formal Claim</label>
+              <input
+                id="objectiveInput"
+                data-testid="objective-input"
+                type="text"
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label htmlFor="protocolInput">Protocol Specification (Markdown)</label>
+              <textarea
+                id="protocolInput"
+                data-testid="protocol-input"
+                rows={6}
+                value={protocolMarkdown}
+                onChange={(e) => setProtocolMarkdown(e.target.value)}
+              />
+            </div>
+          </section>
+
+          <section className="wb-result-band">
+            {!result ? (
+              <div
+                style={{ padding: '48px 0', color: 'var(--muted)' }}
+                data-testid="empty-state"
+              >
+                <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)', fontSize: '0.96rem' }}>
+                  Select a reference case or edit the specification, then select Run Verification.
+                </p>
+                <p style={{ margin: 0, fontSize: '0.84rem', fontFamily: 'var(--font-mono)' }}>
+                  REPLAY MODE EXECUTES OFFLINE WITH DETERMINISTIC CANDIDATES AND FORMAL CHECKS.
+                </p>
+              </div>
+            ) : (
+              <div data-testid="result-panel">
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <span className={`badge ${result.ubk.status}`} data-testid="verdict-badge">
+                      {result.ubk.status}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.76rem',
+                        color: 'var(--text)',
+                      }}
+                      data-testid="certificate-type"
+                    >
+                      {result.ubk.certificate.certificate_type}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)' }}>
+                      {result.mode.toUpperCase()} · {result.timingMs.total} MS
+                    </span>
+                  </div>
+                  <button type="button" className="btn-ghost" onClick={exportJson}>
+                    Export JSON
+                  </button>
+                </div>
+
+                <div className="tabs">
+                  <button
+                    type="button"
+                    className={`tab-btn ${activeTab === 'verdict' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('verdict')}
+                  >
+                    Verdict &amp; Certificate
+                  </button>
+                  <button
+                    type="button"
+                    className={`tab-btn ${activeTab === 'constraints' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('constraints')}
+                  >
+                    SMT-LIB2 ({result.ubk.state.Cir.constraints.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`tab-btn ${activeTab === 'dag' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('dag')}
+                  >
+                    Execution Graph ({result.plan.nodes.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`tab-btn ${activeTab === 'trace' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('trace')}
+                  >
+                    Kernel Trace ({result.ubk.traceLog.length})
+                  </button>
+                </div>
+
+                {activeTab === 'verdict' && (
+                  <div>
+                    <div className="kv-grid">
+                      <div className="kv">
+                        <div className="kv-label">SMT Verdict</div>
+                        <div className="kv-val" data-testid="smt-verdict">
+                          {result.smtResult.verdict} ({result.smtResult.soundness})
+                        </div>
+                      </div>
+                      <div className="kv">
+                        <div className="kv-label">Axiom Check</div>
+                        <div className="kv-val">{result.scientificValidation.classification}</div>
+                      </div>
+                      <div className="kv">
+                        <div className="kv-label">Stop Reason</div>
+                        <div className="kv-val">{result.ubk.stopReason}</div>
+                      </div>
+                      <div className="kv">
+                        <div className="kv-label">Fingerprint</div>
+                        <div className="kv-val">{result.ubk.certificate.fingerprint.slice(0, 16)}...</div>
+                      </div>
+                    </div>
+
+                    <div className="label-caps">SMT Proof Evaluation</div>
+                    <pre className="code-block" data-testid="smt-proof">
+                      {result.smtResult.proof || 'No proof string returned.'}
+                    </pre>
+
+                    <div className="label-caps">Scientific Axiom Summary</div>
+                    <pre className="code-block">
+                      {result.scientificValidation.reasoning_summary}
+                    </pre>
+
+                    {result.ubk.artifactBundle.impossibilityCertificates.length > 0 && (
+                      <>
+                        <div className="label-caps">Impossibility Certificates (ImpCert)</div>
+                        {result.ubk.artifactBundle.impossibilityCertificates.map((cert, i) => (
+                          <div className="artifact-card" key={i} data-testid="imp-cert-card">
+                            <div><strong>Reason:</strong> {cert.reason}</div>
+                            <div><strong>Boundary:</strong> <code>{cert.boundary}</code></div>
+                            <div><strong>Logic:</strong> <code>{cert.logic}</code></div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {result.ubk.artifactBundle.witnesses.length > 0 && (
+                      <>
+                        <div className="label-caps">Counterexample Witnesses</div>
+                        {result.ubk.artifactBundle.witnesses.map((w, i) => (
+                          <div className="artifact-card" key={i}>
+                            <div><strong>Constraint:</strong> <code>{w.constraintViolated}</code></div>
+                            <div>{w.counterExample}</div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'constraints' && (
+                  <div>
+                    {result.ubk.state.Cir.constraints.length === 0 ? (
+                      <p style={{ color: 'var(--muted)', fontSize: '0.88rem' }}>
+                        No formalizable SMT constraints extracted. Inspect Umap below.
+                      </p>
+                    ) : (
+                      result.ubk.state.Cir.constraints.map((c) => (
+                        <div className="artifact-card" key={c.id}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                            <strong>{c.id}</strong> · {c.domain} · confidence {c.confidence.toFixed(2)}
+                          </div>
+                          <div style={{ fontSize: '0.86rem', marginTop: 4 }}>{c.expression}</div>
+                          {c.smtlib && <pre className="code-block" style={{ marginTop: 10 }}>{c.smtlib.trim()}</pre>}
+                        </div>
+                      ))
+                    )}
+
+                    {result.ubk.state.Umap.length > 0 && (
+                      <>
+                        <div className="label-caps">Unknown Region Map (Umap)</div>
+                        {result.ubk.state.Umap.map((u, i) => (
+                          <div className="artifact-card" key={i}>
+                            <strong>{u.code}</strong>: {u.reason}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'dag' && (
+                  <div>
+                    {result.dagVerification && (
+                      <div className="artifact-card" data-testid="dag-proof-card" style={{ marginBottom: 16 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', marginBottom: 6 }}>
+                          <strong>DAG ACYCLICITY CHECK</strong> ·{' '}
+                          {result.dagVerification.isAcyclic ? 'ACYCLIC' : 'CYCLE DETECTED'} ·{' '}
+                          {result.dagVerification.verificationMethod.toUpperCase()}
+                        </div>
+                        <pre className="code-block" style={{ marginBottom: 0 }}>
+                          {result.dagVerification.proof.join('\n')}
+                        </pre>
+                      </div>
+                    )}
+
+                    <div className="dot-canvas" style={{ marginBottom: 20, border: '1px solid var(--line)' }}>
+                      <div className="dag-flow">
+                        {result.plan.nodes.map((node, idx) => (
+                          <React.Fragment key={node.id}>
+                            <div className="dag-node">
+                              <div className="dag-node-top">
+                                <strong>{node.id} · {node.name}</strong>
+                                <span style={{ color: 'var(--muted)' }}>{node.modality}</span>
+                              </div>
+                              <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: 4 }}>
+                                {node.description}
+                              </div>
+                            </div>
+                            {idx < result.plan.nodes.length - 1 && <div className="dag-connector" />}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="label-caps">Emitted Artifacts ({result.artifacts.length})</div>
+                    {result.artifacts.map((art, i) => (
+                      <div className="artifact-card" key={art.id || i}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', marginBottom: 8 }}>
+                          <strong>{art.title || art.id || `Artifact ${i + 1}`}</strong> · {art.type}
+                        </div>
+                        <pre className="code-block" style={{ marginBottom: 0 }}>{art.content}</pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === 'trace' && (
+                  <div>
+                    <div className="label-caps">Turwin v4.0-FS Kernel Log</div>
+                    <pre className="code-block" style={{ marginBottom: 0 }}>
+                      {result.ubk.traceLog.join('\n')}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );

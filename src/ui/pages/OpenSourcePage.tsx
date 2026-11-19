@@ -26,15 +26,16 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
 
   return (
     <main className="container-narrow prose" data-testid="open-source-page">
-      <div className="eyebrow">Open Source · MIT License</div>
-      <h1>The GitHub Repository, Explained in Simple Terms</h1>
-      <p className="lead">
-        No proprietary backends, no hidden cloud accounts, and no 30,000-file sprawl. Everything on{' '}
-        <strong>turwinlabs.org</strong> comes from a clean, standalone MIT repository you can clone,
-        inspect, modify, and run locally—with full Node.js Z3 WASM solving—in under two minutes.
-      </p>
+      <div className="section-code">OPEN SOURCE · TURWINAI · MIT LICENSE</div>
+      <h1>The Repository in Plain Terms</h1>
 
-      <div className="cta-row" style={{ marginBottom: 32 }}>
+      <div className="abstract">
+        The public repo holds the full formal kernel, twelve domain axiom tables, the protocol
+        graph compiler, and this web interface. It needs no cloud account, no hosted database, and
+        no paid service to build or run.
+      </div>
+
+      <div className="cta-row" style={{ marginBottom: 28 }}>
         <a
           className="btn-primary"
           href={GITHUB_REPO_URL}
@@ -42,24 +43,24 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
           rel="noreferrer"
           data-testid="github-primary-link"
         >
-          Open on GitHub (MIT) ↗
+          View on GitHub (TurwinAI)
         </a>
         <button type="button" className="btn-secondary" onClick={() => onNavigate('/workbench')}>
-          Try Online First →
+          Open Web Workbench
         </button>
       </div>
 
-      <h2>Run It on Your Machine (3 Commands)</h2>
+      <h2>1. Local Setup (Three Commands)</h2>
       <p>
-        You only need <strong>Node.js 20+</strong> and <strong>npm</strong>. No API key is needed to run
-        the real Z3 SMT solver, 12-domain axiom checks, and all 4 research benchmarks locally:
+        Install Node.js 20 or newer. Run the commands below to compile the interface and start the
+        local server with full Node.js Z3 WebAssembly solving:
       </p>
 
       <div style={{ position: 'relative' }}>
         <pre className="code-block">{QUICKSTART_CMD}</pre>
         <button
           type="button"
-          className="icon-btn"
+          className="btn-ghost"
           style={{ position: 'absolute', top: 10, right: 10 }}
           onClick={() => copyText('quick', QUICKSTART_CMD)}
         >
@@ -68,89 +69,71 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
       </div>
 
       <p>
-        Then open <code>http://127.0.0.1:8787</code> in your browser. Running locally activates the full{' '}
-        <strong>Z3 WASM SMT solver</strong> inside Node.js so every encoded formula is checked directly by
-        Z3.
+        Open <code>http://127.0.0.1:8787</code> in a browser. Local runs load the full Z3 solver
+        inside Node.js so every SMT-LIB2 formula is checked right on your machine.
       </p>
 
-      <h2>What Is Inside the Repository?</h2>
-      <p>
-        Think of the codebase in five small, self-contained pieces:
-      </p>
+      <h2>2. Directory Map</h2>
+      <p>The codebase contains five directories with distinct roles:</p>
 
-      <div className="card" style={{ padding: '10px 20px', marginBottom: 24 }}>
+      <div className="tree-table">
         <div className="tree-row">
           <div className="tree-path">src/core-engine/</div>
           <div>
-            The mathematical heart: <strong>Universal Bounds Kernel</strong> (<code>ubkKernel.ts</code>),{' '}
-            <strong>Turwin v4.0-FS Kernel</strong> (<code>turwinKernel.ts</code>), Z3 SMT verifier
-            (<code>smtVerifier.ts</code>), natural-language constraint encoder, quantum no-cloning logic
-            parser, and pluggable oracle hooks.
+            The Universal Bounds Kernel (<code>ubkKernel.ts</code>), Turwin v4.0-FS kernel
+            (<code>turwinKernel.ts</code>), Z3 SMT verifier (<code>smtVerifier.ts</code>),
+            constraint encoder, quantum no-cloning parser, and optional oracle interfaces.
           </div>
         </div>
         <div className="tree-row">
           <div className="tree-path">src/data/axiomDatabase/</div>
           <div>
-            12 plain JSON files encoding fundamental scientific and mathematical laws (complexity theory,
-            thermodynamics, quantum mechanics, relativity, information theory, math, biology, electrical,
-            mechanical, control, materials, reliability). Easy to inspect or extend with a pull request.
+            Twelve plain JSON files containing verified laws and open conjectures across physics,
+            mathematics, computer science, biology, and engineering.
           </div>
         </div>
         <div className="tree-row">
           <div className="tree-path">src/core/execution/</div>
           <div>
-            Turns structured Markdown research protocols into validated JSON-Schema execution graphs
-            (<code>CompositeDocAst</code>), auto-registers safe tools, and packages verifiable outputs.
+            The Markdown protocol parser, JSON-Schema graph planner (<code>CompositeDocAst</code>),
+            safe tool registry, and verification packet builder.
           </div>
         </div>
         <div className="tree-row">
           <div className="tree-path">src/server/ &amp; src/worker/</div>
           <div>
-            Two clean HTTP runtimes sharing the same kernel: a local Node/Express server with full{' '}
-            <strong>Z3 WASM</strong>, and a lightweight Cloudflare Worker powering{' '}
-            <code>turwinlabs.org</code>.
+            Two HTTP entrypoints sharing the same kernel: a local Node.js server with native Z3
+            WebAssembly, and a Cloudflare Worker that serves <code>turwinlabs.org</code>.
           </div>
         </div>
         <div className="tree-row">
           <div className="tree-path">src/ui/ &amp; tests/</div>
           <div>
-            This exact website (React + Vite, zero external CDN dependencies) plus Vitest unit tests,
-            Playwright browser E2E tests, and an automated MIT license &amp; secret audit script.
+            The React interface, Vitest kernel tests, Playwright browser tests, and an automated
+            release audit script checking secrets, private identifiers, and MIT license compliance.
           </div>
         </div>
       </div>
 
-      <h2>Two Modes: Replay vs. Bring Your Own Key (BYOK)</h2>
-      <div className="card-grid-2" style={{ marginBottom: 24 }}>
-        <div className="card">
-          <h3>Replay Mode (Default, Offline)</h3>
-          <p>
-            Requires zero API keys and zero network calls. Curated candidate outputs are run live through
-            the real formal verification kernel, Z3 SMT solver (in Node), 12-domain axiom DB, and AST
-            planner so anyone can reproduce exact verdicts deterministically.
-          </p>
-        </div>
-        <div className="card">
-          <h3>Live BYOK Mode (Gemini API)</h3>
-          <p>
-            Set <code>GEMINI_API_KEY</code> in <code>.env</code> (or paste a key in the Workbench for a
-            single request) to generate fresh candidate solutions and AST plans via{' '}
-            <code>@google/genai</code>. If a key is missing or invalid, it fails loudly—never silently
-            faking results.
-          </p>
-        </div>
-      </div>
-
-      <h2>Verify Everything Yourself</h2>
+      <h2>3. Replay Mode and Live Key Mode</h2>
       <p>
-        Every commit is checked by four objective commands—strict TypeScript compilation, real Z3 unit
-        tests, headless Playwright end-to-end tests, and an automated secret + MIT license scanner:
+        <strong>Replay mode</strong> is the default. It uses deterministic candidate fixtures and
+        runs real formal verification offline with zero external network traffic.
       </p>
+      <p>
+        <strong>Live BYOK mode</strong> accepts your own <code>GEMINI_API_KEY</code> in{' '}
+        <code>.env</code> or per request in the Workbench. If the key is missing or rejected, the
+        server returns an explicit HTTP 400 or 401 error and stops.
+      </p>
+
+      <h2>4. Automated Verification Commands</h2>
+      <p>Run all four gates after any change to confirm type safety, proofs, and license hygiene:</p>
+
       <div style={{ position: 'relative' }}>
         <pre className="code-block">{VERIFY_CMD}</pre>
         <button
           type="button"
-          className="icon-btn"
+          className="btn-ghost"
           style={{ position: 'absolute', top: 10, right: 10 }}
           onClick={() => copyText('verify', VERIFY_CMD)}
         >
@@ -158,19 +141,19 @@ export const OpenSourcePage: React.FC<OpenSourcePageProps> = ({ onNavigate }) =>
         </button>
       </div>
 
-      <h2>How to Contribute</h2>
+      <h2>5. Contributing</h2>
       <ul>
         <li>
-          <strong>Add domain axioms:</strong> Drop new verified theorems or open conjectures into{' '}
-          <code>src/data/axiomDatabase/*.json</code> with matching unit tests.
+          Add domain theorems or open conjectures to <code>src/data/axiomDatabase/*.json</code> with
+          matching unit tests in <code>tests/kernel.test.ts</code>.
         </li>
         <li>
-          <strong>Improve SMT-LIB2 encoders:</strong> Expand <code>src/core-engine/constraintEncoder.ts</code>{' '}
-          to shrink <code>Umap</code> on new problem classes.
+          Extend <code>src/core-engine/constraintEncoder.ts</code> to translate new natural language
+          bounds into valid SMT-LIB2 formulas.
         </li>
         <li>
-          <strong>Plug in custom oracles or models:</strong> Implement <code>VerificationOracles</code>{' '}
-          in <code>src/core-engine/oracles.ts</code> or swap in any LLM provider alongside Gemini.
+          Bind custom external fact or prior-art checks through <code>setVerificationOracles</code>{' '}
+          in <code>src/core-engine/oracles.ts</code>.
         </li>
       </ul>
     </main>
