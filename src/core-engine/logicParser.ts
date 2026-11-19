@@ -36,12 +36,28 @@ function normalizeKetName(raw: string): string {
 function parseResources(text: string): ResourceState[] {
   const counts = new Map<string, number>();
 
-  // Match optional integer multiplier before a ket, e.g. `2 |psi>` or `|ψ⟩`
-  const ketRegex = /(?:(\d+)\s*\*?\s*)?\|([A-Za-z0-9_ψφϕαβ]+)(?:⟩|>)/g;
+  // Linear-time ket scanner (no nested quantifiers / zero ReDoS risk):
+  // Matches `|psi>`, `|ψ⟩`, and checks immediately preceding multiplier like `2 |psi>` or `2*|psi>`.
+  const ketRegex = /\|([A-Za-z0-9_ψφϕαβ]{1,32})(?:⟩|>)/g;
   let match: RegExpExecArray | null;
   while ((match = ketRegex.exec(text)) !== null) {
-    const mult = match[1] ? Math.max(1, parseInt(match[1], 10)) : 1;
-    const stateId = `quantum_state_${normalizeKetName(match[2])}`;
+    let mult = 1;
+    // Plain linear backward scan for optional integer multiplier (e.g. `2 |psi>` or `2*|psi>`)
+    let cursor = match.index - 1;
+    while (cursor >= 0 && (text[cursor] === ' ' || text[cursor] === '\t')) cursor -= 1;
+    if (cursor >= 0 && text[cursor] === '*') {
+      cursor -= 1;
+      while (cursor >= 0 && (text[cursor] === ' ' || text[cursor] === '\t')) cursor -= 1;
+    }
+    const digitEnd = cursor + 1;
+    while (cursor >= 0 && text[cursor] >= '0' && text[cursor] <= '9') cursor -= 1;
+    const digitStart = cursor + 1;
+    const boundaryOk =
+      digitStart === 0 || !/[A-Za-z0-9_]/.test(text[digitStart - 1]);
+    if (boundaryOk && digitEnd > digitStart && digitEnd - digitStart <= 6) {
+      mult = Math.max(1, parseInt(text.slice(digitStart, digitEnd), 10));
+    }
+    const stateId = `quantum_state_${normalizeKetName(match[1])}`;
     counts.set(stateId, (counts.get(stateId) || 0) + mult);
   }
 
