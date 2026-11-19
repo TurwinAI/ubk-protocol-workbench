@@ -41,7 +41,7 @@ test.describe('Turwin Labs — UBK Protocol Workbench E2E', () => {
     await expect(page.getByTestId('open-source-page')).toBeVisible();
     await expect(page.getByTestId('github-primary-link')).toHaveAttribute(
       'href',
-      'https://github.com/realsuperheavy/ubk-protocol-workbench'
+      'https://github.com/TurwinAI/ubk-protocol-workbench'
     );
 
     // 4. Interactive Workbench — Feasible Z3 SAT benchmark

@@ -114,5 +114,5 @@ export interface RunResult {
   };
 }
 
-export const GITHUB_REPO_URL = 'https://github.com/realsuperheavy/ubk-protocol-workbench';
+export const GITHUB_REPO_URL = 'https://github.com/TurwinAI/ubk-protocol-workbench';
 export const SITE_URL = 'https://turwinlabs.org';

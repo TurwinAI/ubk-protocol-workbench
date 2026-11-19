@@ -12,7 +12,7 @@ A clean-room, MIT-licensed open-source research prototype combining:
 Prerequisites: **Node.js 20+** and **npm**.
 
 ```bash
-git clone https://github.com/realsuperheavy/ubk-protocol-workbench.git
+git clone https://github.com/TurwinAI/ubk-protocol-workbench.git
 cd ubk-protocol-workbench
 npm ci
 npm run build
